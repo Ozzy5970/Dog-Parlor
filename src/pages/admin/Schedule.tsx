@@ -10,7 +10,8 @@ import {
   Dog,
   MessageCircle,
   RefreshCw,
-  LayoutGrid
+  LayoutGrid,
+  Plus
 } from 'lucide-react'
 import {
   PageHeader,
@@ -282,6 +283,13 @@ export default function Schedule() {
               title="Refresh Schedule"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            </button>
+            <button
+              onClick={() => navigate('/admin/bookings/new')}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-xs transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/20 flex items-center space-x-1.5"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Booking</span>
             </button>
             <button
               onClick={() => navigate('/admin/bookings')}

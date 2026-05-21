@@ -12,6 +12,7 @@ import Services from './pages/admin/Services'
 import BlockedSlots from './pages/admin/BlockedSlots'
 import Bookings from './pages/admin/Bookings'
 import Schedule from './pages/admin/Schedule'
+import NewBooking from './pages/admin/NewBooking'
 
 function App() {
   return (
@@ -63,6 +64,14 @@ function App() {
               element={
                 <ProtectedAdminRoute>
                   <Bookings />
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/admin/bookings/new"
+              element={
+                <ProtectedAdminRoute>
+                  <NewBooking />
                 </ProtectedAdminRoute>
               }
             />
