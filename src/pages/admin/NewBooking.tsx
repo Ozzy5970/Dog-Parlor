@@ -24,7 +24,8 @@ import {
 } from '../../components/UI'
 import { fetchServices, type Service } from '../../services/serviceService'
 import { checkAvailability, type AvailableSlot } from '../../services/availabilityService'
-import { findOrCreateCustomer, createPet, createManualBooking } from '../../services/manualBookingService'
+import { adminSubmitBooking } from '../../services/manualBookingService'
+import { utcToLocalTimeParts } from '../../lib/dateTime'
 import { supabase } from '../../lib/supabase'
 
 export default function NewBooking() {
@@ -33,8 +34,71 @@ export default function NewBooking() {
 
   // Business state
   const [services, setServices] = useState<Service[]>([])
-  const [timezone, setTimezone] = useState('Africa/Johannesburg')
+  const [settings, setSettings] = useState<{ timezone: string, max_advance_days: number, min_notice_hours: number }>({
+    timezone: 'Africa/Johannesburg',
+    max_advance_days: 60,
+    min_notice_hours: 2
+  })
   const [loadingBusinessData, setLoadingBusinessData] = useState(true)
+
+  // Helper: compute next likely valid bookable date starting from today
+  const getNextValidBookableDateStr = (currentSettings?: any) => {
+    const activeSettings = currentSettings || settings
+    const tz = activeSettings?.timezone || 'Africa/Johannesburg'
+    const minNotice = activeSettings?.min_notice_hours ?? 2
+    
+    const now = new Date()
+    const earliestTime = new Date(now.getTime() + minNotice * 60 * 60 * 1000)
+    let current = utcToLocalTimeParts(earliestTime, tz)
+    
+    for (let i = 0; i < 7; i++) {
+      const dateCheck = new Date(Date.UTC(current.year, current.month, current.day))
+      const isTooLateForToday = i === 0 && current.hour >= 17
+      
+      const dayOfWeek = dateCheck.getUTCDay()
+      if (dayOfWeek !== 0 && !isTooLateForToday) {
+        return `${current.year}-${String(current.month + 1).padStart(2, '0')}-${String(current.day).padStart(2, '0')}`
+      }
+      
+      const nextDay = new Date(dateCheck.getTime() + 24 * 60 * 60 * 1000)
+      current = utcToLocalTimeParts(nextDay, tz)
+    }
+    
+    const todayLocal = utcToLocalTimeParts(new Date(), tz)
+    return `${todayLocal.year}-${String(todayLocal.month + 1).padStart(2, '0')}-${String(todayLocal.day).padStart(2, '0')}`
+  }
+
+  // Helper: compute today's date in business timezone
+  const getTodayLocalStr = () => {
+    const tz = settings.timezone
+    const nowLocal = utcToLocalTimeParts(new Date(), tz)
+    return `${nowLocal.year}-${String(nowLocal.month + 1).padStart(2, '0')}-${String(nowLocal.day).padStart(2, '0')}`
+  }
+
+  // Helper: compute max allowed date in business timezone
+  const getMaxDateStr = () => {
+    const tz = settings.timezone
+    const maxAdvance = settings.max_advance_days
+    const nowLocal = utcToLocalTimeParts(new Date(), tz)
+    const todayLocalStart = new Date(Date.UTC(nowLocal.year, nowLocal.month, nowLocal.day))
+    const maxAllowedDate = new Date(todayLocalStart.getTime() + maxAdvance * 24 * 60 * 60 * 1000)
+    const maxYear = maxAllowedDate.getUTCFullYear()
+    const maxMonth = maxAllowedDate.getUTCMonth() + 1
+    const maxDay = maxAllowedDate.getUTCDate()
+    return `${maxYear}-${String(maxMonth).padStart(2, '0')}-${String(maxDay).padStart(2, '0')}`
+  }
+
+  const formatDateShort = (dateStr: string) => {
+    if (!dateStr) return ''
+    const [year, month, day] = dateStr.split('-').map(Number)
+    const d = new Date(Date.UTC(year, month - 1, day))
+    return d.toLocaleDateString('en-ZA', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      timeZone: 'UTC',
+    })
+  }
 
   // Step state (1: Source & Service, 2: Date & Time, 3: Client & Pet, 4: Summary)
   const [step, setStep] = useState(1)
@@ -85,17 +149,23 @@ export default function NewBooking() {
       try {
         setLoadingBusinessData(true)
         
-        // 1. Timezone
+        // 1. Settings
         const { data: settingsData, error: settingsError } = await supabase
           .from('business_settings')
-          .select('timezone')
+          .select('timezone, max_advance_days, min_notice_hours')
           .eq('business_id', profile!.business_id)
           .maybeSingle()
 
         if (settingsError) throw settingsError
-        if (settingsData?.timezone) {
-          setTimezone(settingsData.timezone)
+        
+        const loadedSettings = {
+          timezone: settingsData?.timezone || 'Africa/Johannesburg',
+          max_advance_days: settingsData?.max_advance_days ?? 60,
+          min_notice_hours: settingsData?.min_notice_hours ?? 2,
         }
+        
+        setSettings(loadedSettings)
+        setSelectedDate(getNextValidBookableDateStr(loadedSettings))
 
         // 2. Services
         const servicesList = await fetchServices(profile!.business_id)
@@ -154,46 +224,46 @@ export default function NewBooking() {
       setSubmitting(true)
       setSubmitError(null)
 
-      // Step 1: Customer record lookup/insertion
-      const customer = await findOrCreateCustomer(
-        profile.business_id,
-        clientName,
-        clientPhone,
-        clientEmail || null
-      )
-
-      // Step 2: Pet insertion
-      const pet = await createPet(
-        profile.business_id,
-        customer.id,
-        petName,
-        petBreed || null,
-        petSize,
-        petNotes || null
-      )
-
-      // Step 3: Booking creation
-      await createManualBooking(profile.business_id, {
-        customerId: customer.id,
-        petId: pet.id,
+      const result = await adminSubmitBooking({
+        fullName: clientName,
+        phone: clientPhone,
+        email: clientEmail || null,
+        petName: petName,
+        petBreed: petBreed || null,
+        petSize: petSize || null,
+        petNotes: petNotes || null,
         serviceId: selectedService.id,
         startTimeIso: selectedSlot.start_time,
-        endTimeIso: selectedSlot.end_time,
         source: source,
         customerNotes: customerNotes || null,
         adminNotes: adminNotes || null
       })
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to create booking.')
+      }
 
       // Redirect back to bookings
       navigate('/admin/bookings', { state: { bookingCreated: true } })
 
     } catch (err: any) {
       console.error('Error creating manual booking:', err)
-      // Custom double-booking/overlap error detection
-      if (err.code === '23505' || err.message?.toLowerCase().includes('overlap') || err.message?.toLowerCase().includes('double booking')) {
+      
+      const errMsg = err.message || ''
+      if (errMsg.includes('Slot already taken') || errMsg.includes('overlap')) {
         setSubmitError('Schedule Conflict: This time slot is no longer available. Please select another slot or date.')
+      } else if (errMsg.includes('Slot is blocked')) {
+        setSubmitError('Schedule Conflict: This time slot is blocked. Please select another slot or date.')
+      } else if (errMsg.includes('Outside opening hours')) {
+        setSubmitError('Schedule Conflict: This time slot is outside business opening hours.')
+      } else if (errMsg.includes('Booking too soon')) {
+        setSubmitError('Schedule Conflict: Booking is too soon based on advance notice settings.')
+      } else if (errMsg.includes('Booking too far ahead')) {
+        setSubmitError('Schedule Conflict: Booking is too far ahead based on settings.')
+      } else if (errMsg.includes('Invalid service')) {
+        setSubmitError('Error: Invalid service selected.')
       } else {
-        setSubmitError(err.message || 'Failed to create booking. Please check details and try again.')
+        setSubmitError(errMsg || 'Failed to create booking. Please check details and try again.')
       }
 
       // Refresh slots
@@ -344,7 +414,14 @@ export default function NewBooking() {
                   <button
                     key={service.id}
                     type="button"
-                    onClick={() => setSelectedService(service)}
+                    onClick={() => {
+                      setSelectedService(service)
+                      // If moving forward, reset slot selection
+                      if (selectedService?.id !== service.id) {
+                        setSelectedSlot(null)
+                        setSlots([])
+                      }
+                    }}
                     className={`p-5 rounded-2xl border text-left transition-all cursor-pointer flex justify-between items-start ${
                       selectedService?.id === service.id
                         ? 'border-indigo-600 bg-indigo-50/10 shadow-xs ring-2 ring-indigo-500/10'
@@ -406,18 +483,27 @@ export default function NewBooking() {
                     <input
                       type="date"
                       value={selectedDate}
-                      min={new Date().toISOString().split('T')[0]}
+                      min={getTodayLocalStr()}
+                      max={getMaxDateStr()}
                       onChange={(e) => setSelectedDate(e.target.value)}
-                      className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-800 text-sm bg-white"
+                      onClick={(e) => {
+                        try {
+                          e.currentTarget.showPicker()
+                        } catch (err) {}
+                      }}
+                      className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-800 text-sm bg-white cursor-pointer"
                     />
                   </div>
                 </FormField>
+                <p className="text-[10px] text-slate-400 mt-2 font-bold leading-normal">
+                  Choose a date between {formatDateShort(getTodayLocalStr())} and {formatDateShort(getMaxDateStr())}.
+                </p>
 
                 <div className="bg-slate-50 border border-slate-150 rounded-xl p-4 text-xs font-semibold text-slate-500 space-y-2">
                   <p className="text-slate-600 font-extrabold uppercase tracking-wide text-[10px]">Service Info</p>
                   <p>Name: <span className="font-extrabold text-slate-850">{selectedService?.name}</span></p>
                   <p>Duration: <span className="font-extrabold text-slate-850">{selectedService?.duration_minutes} minutes</span></p>
-                  <p>Timezone: <span className="font-extrabold text-slate-850">{timezone}</span></p>
+                  <p>Timezone: <span className="font-extrabold text-slate-850">{settings.timezone}</span></p>
                 </div>
               </div>
 
@@ -668,7 +754,7 @@ export default function NewBooking() {
                       </div>
                     </div>
                     <div>
-                      <p className="text-[10px] text-slate-400 font-semibold italic">Timezone: {timezone}</p>
+                      <p className="text-[10px] text-slate-400 font-semibold italic">Timezone: {settings.timezone}</p>
                     </div>
                   </div>
                 </div>

@@ -14,7 +14,8 @@ import {
   CalendarRange,
   Clock,
   Calendar,
-  Plus
+  Plus,
+  BarChart2
 } from 'lucide-react'
 import { fetchAdminBookings } from '../../services/bookingAdminService'
 import { fetchServices } from '../../services/serviceService'
@@ -168,6 +169,28 @@ export default function Dashboard() {
                   </h3>
                   <p className="text-slate-500 text-xs mt-1.5 leading-relaxed font-medium">
                     Manually create confirmed appointments for phone, WhatsApp, or walk-in clients.
+                  </p>
+                </div>
+              </div>
+              <ArrowRight className="w-5 h-5 text-slate-400 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all" />
+            </div>
+          </Link>
+
+          <Link
+            to="/admin/analytics"
+            className="group block p-6 bg-gradient-to-br from-white to-slate-50/50 hover:from-indigo-50/20 hover:to-indigo-50/10 border border-slate-200 hover:border-indigo-200 rounded-2xl transition-all duration-200 shadow-xs hover:shadow-sm"
+          >
+            <div className="flex items-start justify-between">
+              <div className="space-y-3">
+                <div className="w-10 h-10 bg-indigo-50 text-indigo-650 rounded-xl flex items-center justify-center group-hover:bg-indigo-100 transition-colors">
+                  <BarChart2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-800 group-hover:text-indigo-700 transition-colors">
+                    Business Analytics
+                  </h3>
+                  <p className="text-slate-500 text-xs mt-1.5 leading-relaxed font-medium">
+                    Analyze estimated revenue streams, average booking values, status mix, and booking channels.
                   </p>
                 </div>
               </div>

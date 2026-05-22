@@ -13,6 +13,7 @@ import BlockedSlots from './pages/admin/BlockedSlots'
 import Bookings from './pages/admin/Bookings'
 import Schedule from './pages/admin/Schedule'
 import NewBooking from './pages/admin/NewBooking'
+import Analytics from './pages/admin/Analytics'
 
 function App() {
   return (
@@ -80,6 +81,14 @@ function App() {
               element={
                 <ProtectedAdminRoute>
                   <Schedule />
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/admin/analytics"
+              element={
+                <ProtectedAdminRoute>
+                  <Analytics />
                 </ProtectedAdminRoute>
               }
             />

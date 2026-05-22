@@ -167,3 +167,37 @@ export async function fetchAdminBookingsForRange(
   return data as any as Booking[]
 }
 
+// TODO: Analytics Preparation
+// Future feature will group bookings by source, service, and status for dashboard reporting.
+// e.g.
+export interface BookingAnalyticsSummary {
+  source: Record<string, number> // { online: 10, walk_in: 2 }
+  status: Record<string, number> // { confirmed: 8, no_show: 1 }
+  service_id: Record<string, number> // { "uuid": 5 }
+  total_revenue_cents: number
+}
+
+/**
+ * Lightweight helper to aggregate bookings for analytics
+ */
+export function aggregateBookings(bookings: Booking[]): BookingAnalyticsSummary {
+  return bookings.reduce((acc, b) => {
+    // Group by source
+    acc.source[b.source] = (acc.source[b.source] || 0) + 1
+    // Group by status
+    acc.status[b.status] = (acc.status[b.status] || 0) + 1
+    // Group by service
+    acc.service_id[b.service_id] = (acc.service_id[b.service_id] || 0) + 1
+    // Total revenue for completed/confirmed
+    if (b.status === 'completed' || b.status === 'confirmed') {
+      acc.total_revenue_cents += (b.service?.price_cents || 0)
+    }
+    return acc
+  }, {
+    source: {},
+    status: {},
+    service_id: {},
+    total_revenue_cents: 0
+  } as BookingAnalyticsSummary)
+}
+

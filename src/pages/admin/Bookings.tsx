@@ -376,7 +376,10 @@ export default function Bookings() {
                       const badgeProps = getStatusBadgeProps(booking.status)
                       return <StatusBadge status={badgeProps.status} label={badgeProps.label} />
                     })()}
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-full">
+                      {booking.source?.replace('_', ' ') || 'online'}
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider border-l border-slate-200 pl-2.5">
                       ID: {booking.id.slice(0, 8)}
                     </span>
                   </div>

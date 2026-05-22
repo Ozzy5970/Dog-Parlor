@@ -139,3 +139,47 @@ export async function createManualBooking(
 
   return data
 }
+
+export interface AdminSubmitBookingInput {
+  fullName: string
+  phone: string
+  email?: string | null
+  petName: string
+  petBreed?: string | null
+  petSize?: string | null
+  petNotes?: string | null
+  serviceId: string
+  startTimeIso: string
+  source: 'phone' | 'walk_in' | 'admin'
+  customerNotes?: string | null
+  adminNotes?: string | null
+}
+
+/**
+ * Submits a manual booking request atomically via the secure DB RPC.
+ */
+export async function adminSubmitBooking(
+  input: AdminSubmitBookingInput
+): Promise<{ success: boolean; booking_id?: string; error?: string }> {
+  const { data, error } = await supabase.rpc('admin_submit_booking', {
+    p_full_name: input.fullName,
+    p_phone: input.phone,
+    p_email: input.email || null,
+    p_pet_name: input.petName,
+    p_pet_breed: input.petBreed || null,
+    p_pet_size: input.petSize || null,
+    p_pet_notes: input.petNotes || null,
+    p_service_id: input.serviceId,
+    p_start_time: input.startTimeIso,
+    p_source: input.source,
+    p_customer_notes: input.customerNotes || null,
+    p_admin_notes: input.adminNotes || null
+  })
+
+  if (error) {
+    throw error
+  }
+
+  return data as { success: boolean; booking_id?: string; error?: string }
+}
+
