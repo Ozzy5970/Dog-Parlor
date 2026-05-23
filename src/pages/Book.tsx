@@ -62,6 +62,7 @@ export default function Book() {
   const [petBreed, setPetBreed] = useState('')
   const [petSize, setPetSize] = useState('small')
   const [petNotes, setPetNotes] = useState('')
+  const [petAge, setPetAge] = useState('')
   const [customerNotes, setCustomerNotes] = useState('')
 
   // Submission state
@@ -230,6 +231,14 @@ export default function Book() {
     e.preventDefault()
     if (!business || !selectedServiceId || !selectedDate || !selectedSlot) return
 
+    if (petAge) {
+      const ageVal = parseFloat(petAge)
+      if (isNaN(ageVal) || ageVal < 0 || ageVal > 40) {
+        setSubmitError('Dog age must be between 0 and 40.')
+        return
+      }
+    }
+
     setSubmitting(true)
     setSubmitError('')
 
@@ -246,6 +255,7 @@ export default function Book() {
         service_id: selectedServiceId,
         start_time: selectedSlot.start_time,
         customer_notes: customerNotes.trim() || null,
+        pet_age_years: petAge ? parseFloat(petAge) : null,
       })
 
       if (result.success) {
@@ -670,6 +680,24 @@ export default function Book() {
                     <option value="large">Large (e.g. German Shepherd, Husky)</option>
                   </select>
                 </FormField>
+                <FormField label="Dog age" htmlFor="pet-age" optionalText="Optional">
+                  <input
+                    id="pet-age"
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="40"
+                    value={petAge}
+                    onChange={(e) => setPetAge(e.target.value)}
+                    placeholder="e.g. 3 or 0.5"
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all bg-white text-sm text-slate-850 font-semibold"
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1.5 font-bold leading-normal">
+                    Optional — use years, e.g. 0.5 for 6 months
+                  </p>
+                </FormField>
+              </div>
+              <div>
                 <FormField label="Pet Notes / Temperament" htmlFor="pet-notes" optionalText="Optional">
                   <input
                     id="pet-notes"
@@ -706,7 +734,7 @@ export default function Book() {
               </button>
               <button
                 type="submit"
-                disabled={!fullName.trim() || !phone.trim() || !petName.trim()}
+                disabled={!fullName.trim() || !phone.trim() || !petName.trim() || (petAge !== '' && (parseFloat(petAge) < 0 || parseFloat(petAge) > 40))}
                 className="px-5 py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm cursor-pointer text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
               >
                 Review Booking
@@ -755,7 +783,7 @@ export default function Book() {
             {/* Pet info */}
             <div className="p-5 bg-white space-y-3">
               <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block border-b border-slate-100 pb-1.5">Pet Details</span>
-              <div className="grid gap-y-2 gap-x-6 sm:grid-cols-3 text-sm">
+              <div className="grid gap-y-2 gap-x-6 sm:grid-cols-4 text-sm">
                 <div>
                   <span className="text-slate-400 text-xs font-bold block">Pet Name</span>
                   <span className="font-bold text-slate-800 flex items-center gap-1">
@@ -770,6 +798,12 @@ export default function Book() {
                 <div>
                   <span className="text-slate-400 text-xs font-bold block">Size Category</span>
                   <span className="font-bold text-slate-800 capitalize">{petSize} dog</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 text-xs font-bold block">Dog Age</span>
+                  <span className="font-bold text-slate-800">
+                    {petAge ? `${petAge} ${parseFloat(petAge) === 1 ? 'year' : 'years'}` : 'Not Specified'}
+                  </span>
                 </div>
               </div>
               {petNotes && (

@@ -16,6 +16,7 @@ export interface Pet {
   breed: string | null
   size: string | null
   notes: string | null
+  age_years?: number | null
 }
 
 export interface ManualBookingInput {
@@ -153,6 +154,7 @@ export interface AdminSubmitBookingInput {
   source: 'phone' | 'walk_in' | 'admin'
   customerNotes?: string | null
   adminNotes?: string | null
+  petAgeYears?: number | null
 }
 
 /**
@@ -173,7 +175,8 @@ export async function adminSubmitBooking(
     p_start_time: input.startTimeIso,
     p_source: input.source,
     p_customer_notes: input.customerNotes || null,
-    p_admin_notes: input.adminNotes || null
+    p_admin_notes: input.adminNotes || null,
+    p_pet_age_years: input.petAgeYears !== undefined ? input.petAgeYears : null
   })
 
   if (error) {

@@ -523,7 +523,11 @@ export default function Schedule() {
                               {booking.pet?.name}
                             </p>
                             <p className="text-[10px] text-slate-500 truncate capitalize">
-                              {booking.pet?.size} {booking.pet?.breed ? `• ${booking.pet.breed}` : ''}
+                              {booking.pet?.size} 
+                              {booking.pet?.breed ? ` • ${booking.pet.breed}` : ''}
+                              {booking.pet?.age_years !== undefined && booking.pet?.age_years !== null
+                                ? ` • ${booking.pet.age_years} ${booking.pet.age_years === 1 ? 'yr' : 'yrs'}`
+                                : ''}
                             </p>
                           </div>
                         </div>

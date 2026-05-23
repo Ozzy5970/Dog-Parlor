@@ -119,6 +119,7 @@ export default function NewBooking() {
   const [petBreed, setPetBreed] = useState('')
   const [petSize, setPetSize] = useState<'small' | 'medium' | 'large'>('small')
   const [petNotes, setPetNotes] = useState('')
+  const [petAge, setPetAge] = useState('')
 
   // Booking Notes
   const [customerNotes, setCustomerNotes] = useState('')
@@ -134,7 +135,7 @@ export default function NewBooking() {
   // Step validations
   const isStep1Valid = !!selectedService
   const isStep2Valid = !!selectedDate && !!selectedSlot
-  const isStep3Valid = !!clientName.trim() && !!clientPhone.trim() && !!petName.trim()
+  const isStep3Valid = !!clientName.trim() && !!clientPhone.trim() && !!petName.trim() && (petAge === '' || (parseFloat(petAge) >= 0 && parseFloat(petAge) <= 40))
 
   // Load initial settings and services
   useEffect(() => {
@@ -220,6 +221,14 @@ export default function NewBooking() {
   const handleSubmit = async () => {
     if (!profile?.business_id || !selectedService || !selectedSlot) return
 
+    if (petAge) {
+      const ageVal = parseFloat(petAge)
+      if (isNaN(ageVal) || ageVal < 0 || ageVal > 40) {
+        setSubmitError('Dog age must be between 0 and 40.')
+        return
+      }
+    }
+
     try {
       setSubmitting(true)
       setSubmitError(null)
@@ -236,7 +245,8 @@ export default function NewBooking() {
         startTimeIso: selectedSlot.start_time,
         source: source,
         customerNotes: customerNotes || null,
-        adminNotes: adminNotes || null
+        adminNotes: adminNotes || null,
+        petAgeYears: petAge ? parseFloat(petAge) : null
       })
 
       if (!result.success) {
@@ -620,38 +630,58 @@ export default function NewBooking() {
             {/* Pet Section */}
             <SectionCard title="5. Pet Information" icon={<Dog className="w-4 h-4" />}>
               <div className="space-y-4">
-                <FormField label="Pet Name" required>
-                  <input
-                    type="text"
-                    required
-                    value={petName}
-                    onChange={(e) => setPetName(e.target.value)}
-                    placeholder="Enter dog name..."
-                    className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-800 text-sm bg-white"
-                  />
-                </FormField>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField label="Pet Name" required>
+                    <input
+                      type="text"
+                      required
+                      value={petName}
+                      onChange={(e) => setPetName(e.target.value)}
+                      placeholder="Enter dog name..."
+                      className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-800 text-sm bg-white"
+                    />
+                  </FormField>
 
-                <FormField label="Breed" optionalText="Optional">
-                  <input
-                    type="text"
-                    value={petBreed}
-                    onChange={(e) => setPetBreed(e.target.value)}
-                    placeholder="e.g. Golden Retriever..."
-                    className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-800 text-sm bg-white"
-                  />
-                </FormField>
+                  <FormField label="Breed" optionalText="Optional">
+                    <input
+                      type="text"
+                      value={petBreed}
+                      onChange={(e) => setPetBreed(e.target.value)}
+                      placeholder="e.g. Golden Retriever..."
+                      className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-800 text-sm bg-white"
+                    />
+                  </FormField>
+                </div>
 
-                <FormField label="Dog Size" optionalText="Optional">
-                  <select
-                    value={petSize}
-                    onChange={(e) => setPetSize(e.target.value as any)}
-                    className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-800 text-sm bg-white cursor-pointer"
-                  >
-                    <option value="small">Small</option>
-                    <option value="medium">Medium</option>
-                    <option value="large">Large</option>
-                  </select>
-                </FormField>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField label="Dog Size" optionalText="Optional">
+                    <select
+                      value={petSize}
+                      onChange={(e) => setPetSize(e.target.value as any)}
+                      className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-800 text-sm bg-white cursor-pointer"
+                    >
+                      <option value="small">Small</option>
+                      <option value="medium">Medium</option>
+                      <option value="large">Large</option>
+                    </select>
+                  </FormField>
+
+                  <FormField label="Dog age" optionalText="Optional">
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="40"
+                      value={petAge}
+                      onChange={(e) => setPetAge(e.target.value)}
+                      placeholder="e.g. 3 or 0.5"
+                      className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-800 text-sm bg-white"
+                    />
+                  </FormField>
+                </div>
+                <p className="text-[10px] text-slate-400 font-bold leading-normal -mt-2">
+                  Optional — use years, e.g. 0.5 for 6 months
+                </p>
 
                 <FormField label="Pet Grooming Notes" optionalText="Optional">
                   <textarea
@@ -782,6 +812,11 @@ export default function NewBooking() {
                       {petBreed && (
                         <span className="px-2 py-0.5 bg-slate-200 text-slate-700 text-[10px] font-extrabold rounded-full">
                           {petBreed}
+                        </span>
+                      )}
+                      {petAge && (
+                        <span className="px-2 py-0.5 bg-indigo-50 border border-indigo-100 text-indigo-700 text-[10px] font-extrabold rounded-full">
+                          Age: {petAge} {parseFloat(petAge) === 1 ? 'year' : 'years'}
                         </span>
                       )}
                     </div>

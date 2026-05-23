@@ -23,6 +23,7 @@ export interface Booking {
     name: string
     breed: string | null
     size: string | null
+    age_years: number | null
   } | null
   service: {
     name: string
@@ -44,7 +45,8 @@ export async function fetchAdminBookings(businessId: string): Promise<Booking[]>
       pet:pets (
         name,
         breed,
-        size
+        size,
+        age_years
       ),
       service:services (
         name,
@@ -85,7 +87,8 @@ export async function updateBookingStatus(
       pet:pets (
         name,
         breed,
-        size
+        size,
+        age_years
       ),
       service:services (
         name,
@@ -119,7 +122,8 @@ export async function updateBookingAdminNotes(
       pet:pets (
         name,
         breed,
-        size
+        size,
+        age_years
       ),
       service:services (
         name,
@@ -150,7 +154,8 @@ export async function fetchAdminBookingsForRange(
       pet:pets (
         name,
         breed,
-        size
+        size,
+        age_years
       ),
       service:services (
         name,

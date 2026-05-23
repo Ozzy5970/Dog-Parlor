@@ -12,6 +12,7 @@ export interface BookingRequestInput {
   service_id: string
   start_time: string // ISO string
   customer_notes?: string | null
+  pet_age_years?: number | null
 }
 
 export interface BookingRequestResult {
@@ -38,6 +39,7 @@ export async function submitBookingRequest(input: BookingRequestInput): Promise<
       p_service_id: input.service_id,
       p_start_time: input.start_time,
       p_customer_notes: input.customer_notes || null,
+      p_pet_age_years: input.pet_age_years !== undefined ? input.pet_age_years : null,
     })
 
     if (error) {

@@ -461,6 +461,11 @@ export default function Bookings() {
                             {booking.pet.breed}
                           </span>
                         )}
+                        {booking.pet?.age_years !== undefined && booking.pet?.age_years !== null && (
+                          <span className="px-2 py-0.5 bg-indigo-50 border border-indigo-150 text-indigo-700 text-[10px] font-extrabold rounded-full">
+                            Age: {booking.pet.age_years} {booking.pet.age_years === 1 ? 'year' : 'years'}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
