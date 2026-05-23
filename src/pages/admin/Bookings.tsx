@@ -11,7 +11,6 @@ import {
   UserX,
   MessageCircle,
   FileText,
-  ChevronLeft,
   RefreshCw,
   Clock,
   Dog,
@@ -242,7 +241,7 @@ export default function Bookings() {
     <div className="max-w-6xl mx-auto space-y-8 animate-fadeIn">
       {/* Page Header */}
       <PageHeader
-        title="Appointed Bookings"
+        title="Manage Bookings"
         description="Review booking requests, track services, update status workflows, and communicate with clients."
         action={
           <div className="flex items-center space-x-2">
@@ -266,13 +265,6 @@ export default function Bookings() {
             >
               <Calendar className="w-4 h-4" />
               <span>Calendar View</span>
-            </button>
-            <button
-              onClick={() => navigate('/admin')}
-              className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 text-sm font-bold rounded-xl transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/20 flex items-center space-x-1.5"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              <span>Dashboard</span>
             </button>
           </div>
         }

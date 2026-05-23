@@ -317,7 +317,7 @@ export default function Analytics() {
     <div className="space-y-8 animate-fadeIn text-slate-800">
       {/* Header */}
       <PageHeader
-        title="Admin Analytics"
+        title="Business Analytics"
         description="Monitor booking performance, service trends, and estimated revenue streams."
         action={
           <button
@@ -330,8 +330,9 @@ export default function Analytics() {
         }
       />
 
+      {/* TODO: Future: monthly printable report from analytics data */}
       {/* Filter Toolbar */}
-      <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+      <div className="bg-white rounded-2xl p-4 border border-slate-250/60 shadow-xs flex flex-col md:flex-row items-slate-900 md:items-center justify-between gap-4">
         {/* Presets */}
         <div className="flex flex-wrap items-center gap-1.5 bg-slate-100/80 p-1 rounded-xl">
           {(['this_month', 'this_year', 'monthly_comparison', 'custom'] as const).map(preset => {

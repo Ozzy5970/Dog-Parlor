@@ -1,12 +1,10 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import {
   CalendarDays,
   Pencil,
   Trash2,
   Plus,
-  ChevronLeft,
   AlertTriangle
 } from 'lucide-react'
 import { PageHeader, SectionCard, FormField, AlertMessage, LoadingState, EmptyState } from '../../components/UI'
@@ -93,7 +91,6 @@ const getSlotDisplayInfo = (slot: BlockedSlot, tz: string) => {
 }
 
 export default function BlockedSlots() {
-  const navigate = useNavigate()
   const { profile, loading: authLoading } = useAuth()
 
   // State
@@ -308,15 +305,6 @@ export default function BlockedSlots() {
       <PageHeader 
         title="Closures & Unavailable Times" 
         description="Set and manage public holidays, full-day shop closures, staff breaks, and early closures."
-        action={
-          <button
-            onClick={() => navigate('/admin')}
-            className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-655 text-sm font-bold rounded-xl transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/20 flex items-center space-x-1.5"
-          >
-            <ChevronLeft className="w-4 h-4" />
-            <span>Back to Dashboard</span>
-          </button>
-        }
       />
 
       <div className="p-4 bg-indigo-50/50 border border-indigo-150 rounded-2xl text-xs font-semibold text-indigo-850 flex items-start space-x-3">

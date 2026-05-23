@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import {
   Scissors,
-  ChevronLeft,
   Clock,
   Plus,
   Pencil,
@@ -27,7 +25,6 @@ const DOG_SIZES = [
 ]
 
 export default function Services() {
-  const navigate = useNavigate()
   const { profile, loading: authLoading } = useAuth()
 
   // State
@@ -206,15 +203,6 @@ export default function Services() {
       <PageHeader 
         title="Manage Services" 
         description="Create and edit grooming packages and treatments."
-        action={
-          <button
-            onClick={() => navigate('/admin')}
-            className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 text-sm font-bold rounded-xl transition-all cursor-pointer flex items-center space-x-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-          >
-            <ChevronLeft className="w-4 h-4" />
-            <span>Back to Dashboard</span>
-          </button>
-        }
       />
 
       {/* Global Alerts */}
