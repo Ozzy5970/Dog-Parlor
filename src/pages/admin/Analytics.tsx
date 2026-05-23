@@ -262,7 +262,6 @@ export default function Analytics() {
     }))
     .sort((a, b) => b.count - a.count)
 
-  const mostPopularService = popularServices.length > 0 ? popularServices[0] : null
 
   // Monthly Comparison Stats Calculation
   const monthNames = [
@@ -915,77 +914,6 @@ export default function Analytics() {
                 </table>
               </div>
             </SectionCard>
-
-            {/* Revenue Summaries and Insights */}
-            <div className="bg-slate-50 border border-slate-200 rounded-3xl p-6 grid grid-cols-1 md:grid-cols-2 gap-8 shadow-xs">
-              <div className="space-y-3">
-                <h4 className="text-sm font-extrabold uppercase tracking-widest text-slate-400">Estimated Revenue Details</h4>
-                <p className="text-xs text-slate-505 text-slate-500 leading-relaxed font-medium">
-                  Estimated revenue sums the default price value of services booked under all <strong className="text-slate-700 font-bold">Confirmed</strong> and <strong className="text-slate-700 font-bold">Completed</strong> statuses.
-                </p>
-                <div className="bg-white border border-slate-100 p-4 rounded-2xl flex justify-between items-center text-sm">
-                  <span className="text-slate-500">Sum of Confirmed + Completed Price:</span>
-                  <span className="font-extrabold text-indigo-600">{formatPrice(estimatedRevenueCents)}</span>
-                </div>
-                <div className="bg-white border border-slate-100 p-4 rounded-2xl flex justify-between items-center text-sm">
-                  <span className="text-slate-505 text-slate-500">Excluded (Pending, Cancelled, No-Show Value):</span>
-                  <span className="font-semibold text-slate-400">
-                    {formatPrice(
-                      bookings
-                        .filter(b => b.status === 'pending' || b.status === 'cancelled' || b.status === 'no_show')
-                        .reduce((sum, b) => sum + (b.service?.price_cents || 0), 0)
-                    )}
-                  </span>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <h4 className="text-sm font-extrabold uppercase tracking-widest text-slate-400">Business Insight Summary</h4>
-                <div className="space-y-3">
-                  {mostPopularService && (
-                    <div className="flex items-start space-x-3 text-sm">
-                      <div className="w-5 h-5 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs">
-                        ★
-                      </div>
-                      <div>
-                        <p className="font-bold text-slate-700">Top Service demand</p>
-                        <p className="text-slate-500 text-xs mt-0.5 leading-relaxed font-medium">
-                          The most frequently requested service is <strong className="text-slate-700 font-semibold">{mostPopularService.name}</strong>, with <strong className="text-slate-700 font-semibold">{mostPopularService.count}</strong> bookings representing <strong className="text-slate-750 font-semibold">{((mostPopularService.count / totalBookings) * 100).toFixed(1)}%</strong> of selected range volume.
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex items-start space-x-3 text-sm">
-                    <div className="w-5 h-5 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs">
-                      ✓
-                    </div>
-                    <div>
-                      <p className="font-bold text-slate-700">Online Booking Efficiency</p>
-                      <p className="text-slate-500 text-xs mt-0.5 leading-relaxed font-medium">
-                        {onlinePercentage > 50 ? (
-                          <>Customers primarily book online (<strong className="text-indigo-600 font-semibold">{onlinePercentage.toFixed(1)}%</strong> of appointments). This reduces administrative overhead via walk-ins and phone calls.</>
-                        ) : (
-                          <>Online bookings represent <strong className="text-indigo-650 font-semibold">{onlinePercentage.toFixed(1)}%</strong> of your schedule. Promotion of the online client portal can save staff time on phone and walk-in entry.</>
-                        )}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start space-x-3 text-sm">
-                    <div className="w-5 h-5 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs">
-                      $
-                    </div>
-                    <div>
-                      <p className="font-bold text-slate-700">Target Timezone Configuration</p>
-                      <p className="text-slate-500 text-xs mt-0.5 leading-relaxed font-medium">
-                        Dates and queries are mapped in local parlor timezone: <strong className="text-slate-700 font-semibold">{timezone}</strong>.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         )}
       </div>
