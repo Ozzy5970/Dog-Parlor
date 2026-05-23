@@ -395,6 +395,9 @@ export default function Settings() {
                   placeholder="e.g. 27821234567"
                   className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-800 text-sm"
                 />
+                <span className="text-[10px] text-slate-400 mt-1 block">
+                  Used for the customer WhatsApp button after online booking.
+                </span>
               </FormField>
 
               <FormField label="Slot Interval (Minutes)" required>

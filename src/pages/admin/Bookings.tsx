@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { supabase } from '../../lib/supabase'
 import {
   Calendar,
   Search,
@@ -20,6 +21,7 @@ import {
   Edit3,
   Plus
 } from 'lucide-react'
+import { createWhatsAppLink, getPendingBookingMessage, getConfirmedBookingMessage, getCancelledBookingMessage } from '../../lib/whatsapp'
 import {
   PageHeader,
   SectionCard,
@@ -72,17 +74,25 @@ const getStatusBadgeProps = (status: Booking['status']) => {
   }
 }
 
-// WhatsApp link generator
-const getWhatsAppLink = (phone: string, customerName: string, serviceName: string, startTime: string) => {
-  let cleanPhone = phone.replace(/\D/g, '')
-  if (cleanPhone.startsWith('0') && cleanPhone.length === 10) {
-    cleanPhone = '27' + cleanPhone.slice(1)
-  }
-  const formattedDate = formatDateTime(startTime)
-  const text = encodeURIComponent(
-    `Hello ${customerName}, this is Dog Parlour. We are writing regarding your booking request for ${serviceName} on ${formattedDate}.`
-  )
-  return `https://wa.me/${cleanPhone}?text=${text}`
+// Helper to format date and time parts separately for WhatsApp messages
+const formatLocalDatePart = (isoString: string): string => {
+  if (!isoString) return ''
+  const date = new Date(isoString)
+  return date.toLocaleDateString('en-ZA', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric'
+  })
+}
+
+const formatLocalTimePart = (isoString: string): string => {
+  if (!isoString) return ''
+  const date = new Date(isoString)
+  return date.toLocaleTimeString('en-ZA', {
+    hour: '2-digit',
+    minute: '2-digit'
+  })
 }
 
 const sourceLabels: Record<string, string> = {
@@ -102,6 +112,22 @@ export default function Bookings() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [businessName, setBusinessName] = useState('the Parlour')
+
+  useEffect(() => {
+    if (profile?.business_id) {
+      supabase
+        .from('businesses')
+        .select('name')
+        .eq('id', profile.business_id)
+        .single()
+        .then(({ data }) => {
+          if (data?.name) {
+            setBusinessName(data.name)
+          }
+        })
+    }
+  }, [profile])
 
   // Filters & Search
   const [statusFilter, setStatusFilter] = useState<string>('all')
@@ -474,22 +500,36 @@ export default function Bookings() {
                 <div className="flex flex-col justify-between w-full lg:w-48 space-y-3 shrink-0">
                   <div className="space-y-2">
                     {/* WhatsApp Action button */}
-                    {booking.customer?.phone && (
-                      <a
-                        href={getWhatsAppLink(
-                          booking.customer.phone,
-                          booking.customer.full_name,
-                          booking.service?.name || '',
-                          booking.start_time
-                        )}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="w-full py-2 border border-slate-200 hover:border-emerald-200 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 text-xs font-bold rounded-xl transition-all flex items-center justify-center space-x-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-                      >
-                        <MessageCircle className="w-3.5 h-3.5 fill-emerald-100 group-hover:fill-emerald-200" />
-                        <span>WhatsApp Client</span>
-                      </a>
-                    )}
+                    {booking.customer?.phone && (() => {
+                      const cName = booking.customer.full_name
+                      const pName = booking.pet?.name || 'your dog'
+                      const dateStr = formatLocalDatePart(booking.start_time)
+                      const timeStr = formatLocalTimePart(booking.start_time)
+                      
+                      let message = ''
+                      if (booking.status === 'pending') {
+                        message = getPendingBookingMessage(cName, businessName, pName, dateStr, timeStr)
+                      } else if (booking.status === 'confirmed') {
+                        message = getConfirmedBookingMessage(cName, businessName, pName, dateStr, timeStr)
+                      } else {
+                        // For cancelled or fallback
+                        message = getCancelledBookingMessage(cName, businessName, pName, dateStr, timeStr)
+                      }
+
+                      const link = createWhatsAppLink(booking.customer.phone, message)
+                      
+                      return link ? (
+                        <a
+                          href={link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full py-2 border border-slate-200 hover:border-emerald-200 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 text-xs font-bold rounded-xl transition-all flex items-center justify-center space-x-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 cursor-pointer"
+                        >
+                          <MessageCircle className="w-3.5 h-3.5 fill-emerald-100 group-hover:fill-emerald-200" />
+                          <span>WhatsApp Client</span>
+                        </a>
+                      ) : null
+                    })()}
 
                     {/* Booking Status transition logic */}
                     <div className="space-y-1.5">

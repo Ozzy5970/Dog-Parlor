@@ -1,5 +1,6 @@
 import { useLocation, Link } from 'react-router-dom'
 import { CheckCircle2, MessageSquare, ArrowLeft, Tag, Calendar, Clock, PawPrint, User } from 'lucide-react'
+import { createWhatsAppLink, getCustomerToParlourMessage } from '../lib/whatsapp'
 
 interface BookingDetails {
   serviceName: string
@@ -32,14 +33,8 @@ export default function BookingSuccess() {
   // Helper to construct WhatsApp messaging URL
   const getWhatsAppUrl = (details: BookingDetails) => {
     if (!details.whatsappNumber) return '#'
-    let cleaned = details.whatsappNumber.replace(/\D/g, '')
-    // Default to South Africa (+27) if starts with 0 and is 10 digits
-    if (cleaned.startsWith('0') && cleaned.length === 10) {
-      cleaned = '27' + cleaned.substring(1)
-    }
-    const friendlyDate = formatDateFriendly(details.dateStr)
-    const message = `Hi! I just submitted a booking request for my pet, ${details.petName}, for a ${details.serviceName} on ${friendlyDate} at ${details.timeStr}. My name is ${details.customerName}. Please confirm if this slot is available. Thank you!`
-    return `https://wa.me/${cleaned}?text=${encodeURIComponent(message)}`
+    const message = getCustomerToParlourMessage(details.petName)
+    return createWhatsAppLink(details.whatsappNumber, message) || '#'
   }
 
   return (
@@ -103,7 +98,7 @@ export default function BookingSuccess() {
       )}
 
       <div className="flex flex-col gap-3 w-full">
-        {bookingDetails?.whatsappNumber && (
+        {bookingDetails?.whatsappNumber && getWhatsAppUrl(bookingDetails) !== '#' ? (
           <a
             href={getWhatsAppUrl(bookingDetails)}
             target="_blank"
@@ -113,6 +108,10 @@ export default function BookingSuccess() {
             <MessageSquare className="w-4.5 h-4.5 fill-current" />
             <span>Send WhatsApp Confirmation</span>
           </a>
+        ) : (
+          <div className="w-full py-3.5 px-4 bg-slate-100 text-slate-500 text-sm font-bold rounded-xl text-center border border-slate-200/50">
+            WhatsApp number not configured
+          </div>
         )}
 
         <Link

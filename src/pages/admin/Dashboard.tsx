@@ -33,6 +33,7 @@ import {
 import { fetchAdminBookingsForRange, updateBookingStatus, type Booking } from '../../services/bookingAdminService'
 import { localTimeToUTC, utcToLocalTimeParts } from '../../lib/dateTime'
 import { supabase } from '../../lib/supabase'
+import { createWhatsAppLink, getPendingBookingMessage, getConfirmedBookingMessage, getCancelledBookingMessage } from '../../lib/whatsapp'
 
 const sourceLabels: Record<string, string> = {
   online: 'Online',
@@ -51,6 +52,7 @@ export default function Dashboard() {
   const [activeServicesCount, setActiveServicesCount] = useState(0)
   const [thisMonthRevenue, setThisMonthRevenue] = useState(0)
   const [timezone, setTimezone] = useState('Africa/Johannesburg')
+  const [businessName, setBusinessName] = useState('the Parlour')
   
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -71,6 +73,17 @@ export default function Dashboard() {
       if (settingsError) throw settingsError
       const tz = settingsData?.timezone || 'Africa/Johannesburg'
       setTimezone(tz)
+
+      // Fetch business name
+      const { data: bizData } = await supabase
+        .from('businesses')
+        .select('name')
+        .eq('id', bid)
+        .single()
+      
+      if (bizData?.name) {
+        setBusinessName(bizData.name)
+      }
 
       // 2. Compute date ranges
       const now = new Date()
@@ -200,18 +213,45 @@ export default function Dashboard() {
 
   const nextAppointment = confirmedToday[0] || pendingToday[0] || null
 
+  // Helpers to format date and time parts separately for WhatsApp messages
+  const formatLocalDatePart = (isoString: string): string => {
+    if (!isoString) return ''
+    const date = new Date(isoString)
+    return date.toLocaleDateString('en-ZA', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    })
+  }
+
+  const formatLocalTimePart = (isoString: string): string => {
+    if (!isoString) return ''
+    const date = new Date(isoString)
+    return date.toLocaleTimeString('en-ZA', {
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
   // WhatsApp template link for next appointment
   const getWhatsAppLink = (booking: Booking) => {
     if (!booking.customer?.phone) return '#'
-    let phone = booking.customer.phone.replace(/\D/g, '')
-    if (phone.startsWith('0') && phone.length === 10) {
-      phone = '27' + phone.slice(1)
+    const cName = booking.customer.full_name
+    const pName = booking.pet?.name || 'your dog'
+    const dateStr = formatLocalDatePart(booking.start_time)
+    const timeStr = formatLocalTimePart(booking.start_time)
+    
+    let message = ''
+    if (booking.status === 'pending') {
+      message = getPendingBookingMessage(cName, businessName, pName, dateStr, timeStr)
+    } else if (booking.status === 'confirmed') {
+      message = getConfirmedBookingMessage(cName, businessName, pName, dateStr, timeStr)
+    } else {
+      message = getCancelledBookingMessage(cName, businessName, pName, dateStr, timeStr)
     }
-    const localTime = formatLocalTime(booking.start_time)
-    const text = encodeURIComponent(
-      `Hello ${booking.customer.full_name}, this is Dog Parlour. We are looking forward to seeing you and ${booking.pet?.name || 'your dog'} today at ${localTime} for ${booking.service?.name || 'grooming'}.`
-    )
-    return `https://wa.me/${phone}?text=${text}`
+
+    return createWhatsAppLink(booking.customer.phone, message) || '#'
   }
 
   // Chronological list of today's bookings
@@ -499,6 +539,19 @@ export default function Dashboard() {
                     <p className="text-[10px] text-slate-500 italic bg-white p-2 rounded-lg border border-slate-100 truncate">
                       "{oldestPending.customer_notes}"
                     </p>
+                  )}
+
+                  {/* WhatsApp contact button */}
+                  {oldestPending.customer?.phone && getWhatsAppLink(oldestPending) !== '#' && (
+                    <a
+                      href={getWhatsAppLink(oldestPending)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 text-xs font-bold rounded-xl transition-all flex items-center justify-center space-x-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 cursor-pointer border border-emerald-250/60 mb-1"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5 fill-emerald-100" />
+                      <span>WhatsApp Client</span>
+                    </a>
                   )}
                   
                   {/* Approve/Cancel Quick buttons */}

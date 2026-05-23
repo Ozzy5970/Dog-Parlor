@@ -27,6 +27,7 @@ import {
   fetchAdminBookingsForRange,
   type Booking
 } from '../../services/bookingAdminService'
+import { createWhatsAppLink, getPendingBookingMessage, getConfirmedBookingMessage, getCancelledBookingMessage } from '../../lib/whatsapp'
 
 // Helper to format price from cents to Rands
 const formatPrice = (cents: number): string => {
@@ -65,8 +66,9 @@ export default function Schedule() {
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [businessName, setBusinessName] = useState('the Parlour')
 
-  // Fetch business settings
+  // Fetch business settings & details
   useEffect(() => {
     if (authLoading || !profile?.business_id) return
 
@@ -82,8 +84,19 @@ export default function Schedule() {
         if (data?.timezone) {
           setTimezone(data.timezone)
         }
+
+        // Fetch business name
+        const { data: bizData } = await supabase
+          .from('businesses')
+          .select('name')
+          .eq('id', profile!.business_id)
+          .single()
+        
+        if (bizData?.name) {
+          setBusinessName(bizData.name)
+        }
       } catch (e) {
-        console.error('Error loading business timezone:', e)
+        console.error('Error loading business settings:', e)
       }
     }
 
@@ -252,16 +265,21 @@ export default function Schedule() {
   // WhatsApp Link Helper
   const getWhatsAppLink = (booking: Booking) => {
     if (!booking.customer?.phone) return '#'
-    let phone = booking.customer.phone.replace(/\D/g, '')
-    if (phone.startsWith('0') && phone.length === 10) {
-      phone = '27' + phone.slice(1)
-    }
+    const cName = booking.customer.full_name
+    const pName = booking.pet?.name || 'your dog'
     const localTime = formatLocalTime(booking.start_time)
     const localDate = formatLocalDateLong(selectedDateStr)
-    const text = encodeURIComponent(
-      `Hello ${booking.customer.full_name}, this is Dog Parlour. We are writing to confirm your appointment for ${booking.service?.name || 'grooming'} on ${localDate} at ${localTime}.`
-    )
-    return `https://wa.me/${phone}?text=${text}`
+    
+    let message = ''
+    if (booking.status === 'pending') {
+      message = getPendingBookingMessage(cName, businessName, pName, localDate, localTime)
+    } else if (booking.status === 'confirmed') {
+      message = getConfirmedBookingMessage(cName, businessName, pName, localDate, localTime)
+    } else {
+      message = getCancelledBookingMessage(cName, businessName, pName, localDate, localTime)
+    }
+
+    return createWhatsAppLink(booking.customer.phone, message) || '#'
   }
 
   if (authLoading) {
@@ -549,14 +567,14 @@ export default function Schedule() {
                         )}
 
                         {/* WhatsApp Contact Action */}
-                        {booking.customer?.phone && (
+                        {booking.customer?.phone && getWhatsAppLink(booking) !== '#' && (
                           <a
                             href={getWhatsAppLink(booking)}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="w-full py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-xs font-bold rounded-xl transition-all flex items-center justify-center space-x-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                            className="w-full py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 text-xs font-bold rounded-xl transition-all flex items-center justify-center space-x-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 cursor-pointer border border-emerald-200/50"
                           >
-                            <MessageCircle className="w-4 h-4" />
+                            <MessageCircle className="w-4 h-4 fill-emerald-100" />
                             <span>Contact via WhatsApp</span>
                           </a>
                         )}

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
+import { supabase } from '../../lib/supabase'
 import {
   Search,
   User,
@@ -14,7 +15,8 @@ import {
   Check,
   Loader2,
   Bookmark,
-  ChevronRight
+  ChevronRight,
+  MessageSquare
 } from 'lucide-react'
 import {
   PageHeader,
@@ -32,6 +34,7 @@ import {
   type CustomerHistory,
   type Household
 } from '../../services/customerAdminService'
+import { createWhatsAppLink, getGeneralCustomerMessage } from '../../lib/whatsapp'
 
 // Helper to format ISO date to readable string
 const formatLocalDate = (isoString: string): string => {
@@ -62,6 +65,7 @@ export default function Customers() {
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [businessName, setBusinessName] = useState('the Parlour')
   
   // Selected Customer details
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null)
@@ -96,11 +100,22 @@ export default function Customers() {
     }
   }
 
-  // Load Initial Data
+  // Load Initial Data & Business Details
   useEffect(() => {
     const bid = profile?.business_id
     if (!bid) return
     loadCustomers(bid, searchQuery)
+
+    supabase
+      .from('businesses')
+      .select('name')
+      .eq('id', bid)
+      .single()
+      .then(({ data }) => {
+        if (data?.name) {
+          setBusinessName(data.name)
+        }
+      })
   }, [profile])
 
   // Trigger search
@@ -292,6 +307,7 @@ export default function Customers() {
                 {customers.map((c) => {
                   const stats = getBookingStats(c)
                   const isSelected = c.id === selectedCustomerId
+                  const waLink = createWhatsAppLink(c.phone, getGeneralCustomerMessage(c.full_name, businessName))
                   return (
                     <div
                       key={c.id}
@@ -306,16 +322,32 @@ export default function Customers() {
                         <p className={`font-extrabold text-sm truncate ${isSelected ? 'text-indigo-900' : 'text-slate-800'}`}>
                           {c.full_name} {c.surname}
                         </p>
-                        <p className="text-slate-500 font-semibold text-xs flex items-center gap-1">
-                          <Phone className="w-3 h-3 text-slate-400" />
-                          <span>{c.phone}</span>
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-slate-500 font-semibold text-xs flex items-center gap-1">
+                            <Phone className="w-3 h-3 text-slate-400" />
+                            <span>{c.phone}</span>
+                          </p>
+                        </div>
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">
                           {c.pets?.length || 0} {c.pets?.length === 1 ? 'dog' : 'dogs'} 
                           {stats.lastVisit ? ` • Last: ${formatLocalDate(stats.lastVisit)}` : ''}
                         </p>
                       </div>
-                      <ChevronRight className={`w-4 h-4 transition-transform ${isSelected ? 'text-indigo-600 translate-x-0.5' : 'text-slate-300 group-hover:text-slate-500'}`} />
+                      <div className="flex items-center gap-1.5">
+                        {waLink && (
+                          <a
+                            href={waLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="p-1.5 text-slate-450 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+                            title="Message via WhatsApp"
+                          >
+                            <MessageSquare className="w-4 h-4" />
+                          </a>
+                        )}
+                        <ChevronRight className={`w-4 h-4 transition-transform ${isSelected ? 'text-indigo-600 translate-x-0.5' : 'text-slate-300 group-hover:text-slate-500'}`} />
+                      </div>
                     </div>
                   )
                 })}
@@ -350,10 +382,23 @@ export default function Customers() {
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-semibold text-slate-650 pt-2">
-                      <p className="flex items-center gap-1.5">
-                        <Phone className="w-4 h-4 text-slate-400" />
-                        <span>{selectedCustomer.phone}</span>
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <span className="flex items-center gap-1.5">
+                          <Phone className="w-4 h-4 text-slate-400" />
+                          <span>{selectedCustomer.phone}</span>
+                        </span>
+                        {createWhatsAppLink(selectedCustomer.phone) && (
+                          <a
+                            href={createWhatsAppLink(selectedCustomer.phone, getGeneralCustomerMessage(selectedCustomer.full_name, businessName)) || '#'}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-xs hover:shadow-sm transition-all cursor-pointer text-[10px]"
+                          >
+                            <MessageSquare className="w-3 h-3 fill-current" />
+                            <span>WhatsApp</span>
+                          </a>
+                        )}
+                      </div>
                       {selectedCustomer.email && (
                         <p className="flex items-center gap-1.5 truncate">
                           <Mail className="w-4 h-4 text-slate-400" />
@@ -382,15 +427,30 @@ export default function Customers() {
                         {householdMembers.length > 0 && (
                           <div className="space-y-1.5 border-t border-slate-200/60 pt-1.5 mt-1">
                             <span className="text-[9px] font-bold text-slate-450 uppercase block">Family Members:</span>
-                            {householdMembers.map(m => (
-                              <div
-                                key={m.id}
-                                onClick={() => setSelectedCustomerId(m.id)}
-                                className="text-indigo-650 hover:text-indigo-800 hover:underline cursor-pointer font-bold leading-tight"
-                              >
-                                {m.full_name} {m.surname}
-                              </div>
-                            ))}
+                            {householdMembers.map(m => {
+                              const mWaLink = createWhatsAppLink(m.phone, getGeneralCustomerMessage(m.full_name, businessName))
+                              return (
+                                <div key={m.id} className="flex items-center justify-between py-1 border-b border-slate-100 last:border-0">
+                                  <span
+                                    onClick={() => setSelectedCustomerId(m.id)}
+                                    className="text-indigo-655 hover:text-indigo-800 hover:underline cursor-pointer font-bold leading-tight truncate pr-2"
+                                  >
+                                    {m.full_name} {m.surname}
+                                  </span>
+                                  {mWaLink && (
+                                    <a
+                                      href={mWaLink}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="p-1 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition-all cursor-pointer flex-shrink-0"
+                                      title={`WhatsApp ${m.full_name}`}
+                                    >
+                                      <MessageSquare className="w-3.5 h-3.5" />
+                                    </a>
+                                  )}
+                                </div>
+                              )
+                            })}
                           </div>
                         )}
 
