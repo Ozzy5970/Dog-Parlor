@@ -4,7 +4,6 @@ import { useAuth } from '../../context/AuthContext'
 import {
   Phone,
   MessageCircle,
-  UserCheck,
   Calendar as CalendarIcon,
   Clock,
   Dog,
@@ -27,6 +26,12 @@ import { checkAvailability, type AvailableSlot } from '../../services/availabili
 import { adminSubmitBooking } from '../../services/manualBookingService'
 import { utcToLocalTimeParts } from '../../lib/dateTime'
 import { supabase } from '../../lib/supabase'
+
+const sourceLabels: Record<string, string> = {
+  phone: 'Phone',
+  walk_in: 'Walk-in',
+  admin: 'Other manual'
+}
 
 export default function NewBooking() {
   const navigate = useNavigate()
@@ -376,11 +381,10 @@ export default function NewBooking() {
       {step === 1 && (
         <div className="space-y-6">
           <SectionCard title="1. Booking Source">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {[
                 { key: 'phone', label: 'Phone Call', icon: <Phone className="w-5 h-5 text-indigo-600" />, desc: 'Scheduled over phone call' },
-                { key: 'walk_in', label: 'Walk-in Customer', icon: <MessageCircle className="w-5 h-5 text-indigo-600" />, desc: 'Walk-in appointment request' },
-                { key: 'admin', label: 'Admin Initiated', icon: <UserCheck className="w-5 h-5 text-indigo-600" />, desc: 'Manually logged by business admin' }
+                { key: 'walk_in', label: 'Walk-in Customer', icon: <MessageCircle className="w-5 h-5 text-indigo-600" />, desc: 'Walk-in appointment request' }
               ].map((src) => (
                 <button
                   key={src.key}
@@ -834,7 +838,7 @@ export default function NewBooking() {
                 <div>
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Booking Source</span>
                   <span className="inline-block px-3 py-1 bg-indigo-50 border border-indigo-200 text-indigo-700 font-extrabold rounded-xl uppercase">
-                    {source.replace('_', ' ')}
+                    {sourceLabels[source] || source}
                   </span>
                 </div>
                 <div>

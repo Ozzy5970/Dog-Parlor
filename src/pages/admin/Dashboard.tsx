@@ -33,6 +33,13 @@ import { fetchAdminBookingsForRange, updateBookingStatus, type Booking } from '.
 import { localTimeToUTC, utcToLocalTimeParts } from '../../lib/dateTime'
 import { supabase } from '../../lib/supabase'
 
+const sourceLabels: Record<string, string> = {
+  online: 'Online',
+  phone: 'Phone',
+  walk_in: 'Walk-in',
+  admin: 'Other manual'
+}
+
 export default function Dashboard() {
   const { profile, signOut } = useAuth()
 
@@ -429,7 +436,7 @@ export default function Dashboard() {
                     {/* Status indicator */}
                     <div className="shrink-0 flex items-center space-x-2">
                       <span className="text-[9px] font-extrabold uppercase tracking-wider text-slate-450 bg-slate-50 border border-slate-150 px-1.5 py-0.5 rounded-md hidden sm:inline-block">
-                        {b.source}
+                        {sourceLabels[b.source] || b.source}
                       </span>
                       {(() => {
                         let status: 'pending' | 'active' | 'success' | 'danger' | 'inactive' = 'inactive'

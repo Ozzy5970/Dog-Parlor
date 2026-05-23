@@ -598,10 +598,10 @@ export default function Analytics() {
             >
               <div className="space-y-6">
                 {[
-                  { name: 'Online Customer Form', key: 'online', count: onlineCount, color: 'bg-indigo-650', icon: <Laptop className="w-4 h-4" /> },
-                  { name: 'Telephone Calls', key: 'phone', count: phoneCount, color: 'bg-blue-500', icon: <Phone className="w-4 h-4" /> },
-                  { name: 'Walk-ins', key: 'walk_in', count: walkInCount, color: 'bg-teal-500', icon: <Users className="w-4 h-4" /> },
-                  { name: 'Staff Override (Admin)', key: 'admin', count: adminCount, color: 'bg-violet-500', icon: <User className="w-4 h-4" /> }
+                  { name: 'Online bookings', key: 'online', count: onlineCount, color: 'bg-indigo-600', icon: <Laptop className="w-4 h-4" /> },
+                  { name: 'Phone bookings', key: 'phone', count: phoneCount, color: 'bg-blue-600', icon: <Phone className="w-4 h-4" /> },
+                  { name: 'Walk-ins', key: 'walk_in', count: walkInCount, color: 'bg-teal-600', icon: <Users className="w-4 h-4" /> },
+                  ...(adminCount > 0 ? [{ name: 'Other manual', key: 'admin', count: adminCount, color: 'bg-purple-600', icon: <User className="w-4 h-4" /> }] : [])
                 ].map(src => {
                   const pct = totalBookings > 0 ? (src.count / totalBookings) * 100 : 0
                   return (

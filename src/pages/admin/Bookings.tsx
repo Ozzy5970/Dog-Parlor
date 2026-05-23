@@ -86,6 +86,13 @@ const getWhatsAppLink = (phone: string, customerName: string, serviceName: strin
   return `https://wa.me/${cleanPhone}?text=${text}`
 }
 
+const sourceLabels: Record<string, string> = {
+  online: 'Online',
+  phone: 'Phone',
+  walk_in: 'Walk-in',
+  admin: 'Other manual'
+}
+
 export default function Bookings() {
   const navigate = useNavigate()
   const { profile, loading: authLoading } = useAuth()
@@ -377,7 +384,7 @@ export default function Bookings() {
                       return <StatusBadge status={badgeProps.status} label={badgeProps.label} />
                     })()}
                     <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-full">
-                      {booking.source?.replace('_', ' ') || 'online'}
+                      {sourceLabels[booking.source] || booking.source || 'Online'}
                     </span>
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider border-l border-slate-200 pl-2.5">
                       ID: {booking.id.slice(0, 8)}
