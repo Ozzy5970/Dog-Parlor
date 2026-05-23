@@ -6,6 +6,7 @@ export interface Customer {
   full_name: string
   phone: string
   email: string | null
+  surname: string | null
 }
 
 export interface Pet {
@@ -38,7 +39,8 @@ export async function findOrCreateCustomer(
   businessId: string,
   fullName: string,
   phone: string,
-  email?: string | null
+  email?: string | null,
+  surname?: string | null
 ): Promise<Customer> {
   const cleanPhone = phone.trim()
   const cleanName = fullName.trim()
@@ -67,7 +69,8 @@ export async function findOrCreateCustomer(
       business_id: businessId,
       full_name: cleanName,
       phone: cleanPhone,
-      email: cleanEmail
+      email: cleanEmail,
+      surname: surname?.trim() || null
     })
     .select('*')
     .single()
@@ -155,6 +158,7 @@ export interface AdminSubmitBookingInput {
   customerNotes?: string | null
   adminNotes?: string | null
   petAgeYears?: number | null
+  surname?: string | null
 }
 
 /**
@@ -176,7 +180,8 @@ export async function adminSubmitBooking(
     p_source: input.source,
     p_customer_notes: input.customerNotes || null,
     p_admin_notes: input.adminNotes || null,
-    p_pet_age_years: input.petAgeYears !== undefined ? input.petAgeYears : null
+    p_pet_age_years: input.petAgeYears !== undefined ? input.petAgeYears : null,
+    p_surname: input.surname || null
   })
 
   if (error) {

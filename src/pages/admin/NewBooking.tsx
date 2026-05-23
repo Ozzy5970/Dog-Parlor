@@ -116,6 +116,7 @@ export default function NewBooking() {
 
   // Client Details
   const [clientName, setClientName] = useState('')
+  const [clientSurname, setClientSurname] = useState('')
   const [clientPhone, setClientPhone] = useState('')
   const [clientEmail, setClientEmail] = useState('')
 
@@ -251,7 +252,8 @@ export default function NewBooking() {
         source: source,
         customerNotes: customerNotes || null,
         adminNotes: adminNotes || null,
-        petAgeYears: petAge ? parseFloat(petAge) : null
+        petAgeYears: petAge ? parseFloat(petAge) : null,
+        surname: clientSurname || null
       })
 
       if (!result.success) {
@@ -597,16 +599,27 @@ export default function NewBooking() {
             {/* Owner Section */}
             <SectionCard title="4. Customer Profile" icon={<User className="w-4 h-4" />}>
               <div className="space-y-4">
-                <FormField label="Full Name" required>
-                  <input
-                    type="text"
-                    required
-                    value={clientName}
-                    onChange={(e) => setClientName(e.target.value)}
-                    placeholder="Enter owner full name..."
-                    className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-800 text-sm bg-white"
-                  />
-                </FormField>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField label="First Name" required>
+                    <input
+                      type="text"
+                      required
+                      value={clientName}
+                      onChange={(e) => setClientName(e.target.value)}
+                      placeholder="Enter first name..."
+                      className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-800 text-sm bg-white"
+                    />
+                  </FormField>
+                  <FormField label="Surname" optionalText="Optional">
+                    <input
+                      type="text"
+                      value={clientSurname}
+                      onChange={(e) => setClientSurname(e.target.value)}
+                      placeholder="Enter surname..."
+                      className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-800 text-sm bg-white"
+                    />
+                  </FormField>
+                </div>
 
                 <FormField label="Phone Number" required>
                   <input
@@ -799,7 +812,7 @@ export default function NewBooking() {
                 <div className="space-y-2">
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Customer Details</span>
                   <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-150/60 space-y-1 text-xs">
-                    <p className="font-bold text-slate-800">{clientName}</p>
+                    <p className="font-bold text-slate-800">{clientName} {clientSurname}</p>
                     <p className="text-slate-650">Phone: {clientPhone}</p>
                     {clientEmail && <p className="text-slate-655">Email: {clientEmail}</p>}
                   </div>

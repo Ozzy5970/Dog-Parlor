@@ -14,6 +14,7 @@ import Bookings from './pages/admin/Bookings'
 import Schedule from './pages/admin/Schedule'
 import NewBooking from './pages/admin/NewBooking'
 import Analytics from './pages/admin/Analytics'
+import Customers from './pages/admin/Customers'
 
 function App() {
   return (
@@ -89,6 +90,14 @@ function App() {
               element={
                 <ProtectedAdminRoute>
                   <Analytics />
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/admin/customers"
+              element={
+                <ProtectedAdminRoute>
+                  <Customers />
                 </ProtectedAdminRoute>
               }
             />

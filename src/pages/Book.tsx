@@ -56,6 +56,7 @@ export default function Book() {
 
   // Customer & Pet details state
   const [fullName, setFullName] = useState('')
+  const [surname, setSurname] = useState('')
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
   const [petName, setPetName] = useState('')
@@ -256,6 +257,7 @@ export default function Book() {
         start_time: selectedSlot.start_time,
         customer_notes: customerNotes.trim() || null,
         pet_age_years: petAge ? parseFloat(petAge) : null,
+        surname: surname.trim() || null,
       })
 
       if (result.success) {
@@ -268,7 +270,7 @@ export default function Book() {
               start_time: selectedSlot.start_time,
               dateStr: selectedDate,
               timeStr: selectedSlot.label,
-              customerName: fullName.trim(),
+              customerName: `${fullName.trim()} ${surname.trim()}`.trim(),
               petName: petName.trim(),
               whatsappNumber: settings?.whatsapp_number || null,
             },
@@ -607,18 +609,29 @@ export default function Book() {
             <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-200/80 space-y-4">
               <h3 className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 border-b border-slate-200/60 pb-2">Owner Information</h3>
               <div className="grid gap-4 sm:grid-cols-2">
-                <FormField label="Full Name" htmlFor="owner-name" required>
+                <FormField label="First Name" htmlFor="owner-name" required>
                   <input
                     id="owner-name"
                     type="text"
                     required
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    placeholder="John Doe"
+                    placeholder="John"
                     className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all bg-white text-sm text-slate-850 font-semibold"
                   />
                 </FormField>
-                <FormField label="Phone Number" htmlFor="owner-phone" required>
+                <FormField label="Surname" htmlFor="owner-surname" optionalText="Optional">
+                  <input
+                    id="owner-surname"
+                    type="text"
+                    value={surname}
+                    onChange={(e) => setSurname(e.target.value)}
+                    placeholder="Doe"
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all bg-white text-sm text-slate-850 font-semibold"
+                  />
+                </FormField>
+              </div>
+              <FormField label="Phone Number" htmlFor="owner-phone" required>
                   <input
                     id="owner-phone"
                     type="tel"
@@ -629,7 +642,6 @@ export default function Book() {
                     className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all bg-white text-sm text-slate-850 font-semibold"
                   />
                 </FormField>
-              </div>
               <FormField label="Email Address" htmlFor="owner-email" optionalText="Optional">
                 <input
                   id="owner-email"
@@ -822,7 +834,7 @@ export default function Book() {
                   <span className="text-slate-400 text-xs font-bold block">Owner Name</span>
                   <span className="font-bold text-slate-800 flex items-center gap-1">
                     <User className="w-3.5 h-3.5 text-slate-500" />
-                    {fullName}
+                    {fullName} {surname}
                   </span>
                 </div>
                 <div>

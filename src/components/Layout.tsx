@@ -10,7 +10,8 @@ import {
   LogOut,
   Home,
   Calendar,
-  BarChart2
+  BarChart2,
+  Users
 } from 'lucide-react'
 
 interface LayoutProps {
@@ -94,6 +95,18 @@ export default function Layout({ children }: LayoutProps) {
                 >
                   <CalendarRange className="w-4 h-4" />
                   <span className="hidden md:inline">Bookings</span>
+                </Link>
+                <Link
+                  to="/admin/customers"
+                  className={`px-2.5 py-2 rounded-xl text-sm font-semibold transition-all duration-150 flex items-center space-x-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 ${
+                    location.pathname === '/admin/customers'
+                      ? 'bg-indigo-50 text-indigo-700'
+                      : 'text-slate-600 hover:text-indigo-600 hover:bg-slate-50'
+                  }`}
+                  title="Customers"
+                >
+                  <Users className="w-4 h-4" />
+                  <span className="hidden md:inline">Customers</span>
                 </Link>
                 <Link
                   to="/admin/schedule"

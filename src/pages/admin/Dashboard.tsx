@@ -27,7 +27,8 @@ import {
   Check,
   X,
   Loader2,
-  TrendingUp
+  TrendingUp,
+  Users
 } from 'lucide-react'
 import { fetchAdminBookingsForRange, updateBookingStatus, type Booking } from '../../services/bookingAdminService'
 import { localTimeToUTC, utcToLocalTimeParts } from '../../lib/dateTime'
@@ -605,6 +606,15 @@ export default function Dashboard() {
               >
                 <BarChart2 className="w-4 h-4 text-purple-600 group-hover:scale-110 transition-transform" />
                 <span className="text-xs font-extrabold text-slate-850 group-hover:text-purple-750">Analytics</span>
+              </Link>
+
+              {/* Customers */}
+              <Link
+                to="/admin/customers"
+                className="col-span-2 p-3 bg-teal-50/40 hover:bg-teal-50 border border-teal-150/60 rounded-xl text-center transition-all cursor-pointer group flex items-center justify-center space-x-2"
+              >
+                <Users className="w-4 h-4 text-teal-600 group-hover:scale-110 transition-transform" />
+                <span className="text-xs font-extrabold text-slate-850 group-hover:text-teal-750">Customers & Pet History</span>
               </Link>
             </div>
             
