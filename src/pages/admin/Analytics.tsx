@@ -12,7 +12,8 @@ import {
   Sparkles,
   Scissors,
   Clock,
-  Users
+  Users,
+  FileText
 } from 'lucide-react'
 import {
   PageHeader,
@@ -23,6 +24,7 @@ import {
 } from '../../components/UI'
 import { localTimeToUTC, utcToLocalTimeParts } from '../../lib/dateTime'
 import { fetchAnalyticsData, fetchBusinessTimezone, type AnalyticsBooking } from '../../services/analyticsService'
+import { supabase } from '../../lib/supabase'
 
 // Helper to format price from cents to Rands
 const formatPrice = (cents: number): string => {
@@ -48,6 +50,15 @@ export default function Analytics() {
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
 
+  // Monthly Business Report State
+  const [reportMonth, setReportMonth] = useState<number>(new Date().getMonth())
+  const [reportYear, setReportYear] = useState<number>(new Date().getFullYear())
+  const [reportBookings, setReportBookings] = useState<AnalyticsBooking[]>([])
+  const [prevReportBookings, setPrevReportBookings] = useState<AnalyticsBooking[]>([])
+  const [newCustomersCount, setNewCustomersCount] = useState<number>(0)
+  const [loadingReport, setLoadingReport] = useState<boolean>(true)
+  const [reportError, setReportError] = useState<string | null>(null)
+
   // Load timezone on mount
   useEffect(() => {
     const businessId = profile?.business_id
@@ -66,6 +77,8 @@ export default function Analytics() {
         setCustomStart(todayStr)
         setCustomEnd(todayStr)
         setComparisonYear(nowLocal.year)
+        setReportMonth(nowLocal.month)
+        setReportYear(nowLocal.year)
       } catch (err) {
         console.error('Error fetching business timezone:', err)
       }
@@ -143,6 +156,58 @@ export default function Analytics() {
 
     loadAnalytics()
   }, [profile, timezone, rangeType, customStart, customEnd, comparisonYear])
+
+  // Fetch report data when businessId, timezone, reportMonth, or reportYear change
+  useEffect(() => {
+    const businessId = profile?.business_id
+    if (!businessId || !timezone) return
+
+    async function loadReportData() {
+      try {
+        setLoadingReport(true)
+        setReportError(null)
+
+        // 1. Current Month boundaries
+        const lastDayCurr = new Date(reportYear, reportMonth + 1, 0).getDate()
+        const startCurrUtc = localTimeToUTC(reportYear, reportMonth, 1, 0, 0, 0, timezone)
+        const endCurrUtc = localTimeToUTC(reportYear, reportMonth, lastDayCurr, 23, 59, 59, timezone)
+
+        // 2. Previous Month boundaries
+        let prevYear = reportYear
+        let prevMonth = reportMonth - 1
+        if (reportMonth === 0) {
+          prevYear = reportYear - 1
+          prevMonth = 11
+        }
+        const lastDayPrev = new Date(prevYear, prevMonth + 1, 0).getDate()
+        const startPrevUtc = localTimeToUTC(prevYear, prevMonth, 1, 0, 0, 0, timezone)
+        const endPrevUtc = localTimeToUTC(prevYear, prevMonth, lastDayPrev, 23, 59, 59, timezone)
+
+        // 3. Fetch in parallel (bookings and new customers count)
+        const [currData, prevData, customerCountResponse] = await Promise.all([
+          fetchAnalyticsData(businessId!, startCurrUtc.toISOString(), endCurrUtc.toISOString()),
+          fetchAnalyticsData(businessId!, startPrevUtc.toISOString(), endPrevUtc.toISOString()),
+          supabase
+            .from('customers')
+            .select('*', { count: 'exact', head: true })
+            .eq('business_id', businessId!)
+            .gte('created_at', startCurrUtc.toISOString())
+            .lte('created_at', endCurrUtc.toISOString())
+        ])
+
+        setReportBookings(currData)
+        setPrevReportBookings(prevData)
+        setNewCustomersCount(customerCountResponse.count || 0)
+      } catch (err: any) {
+        console.error('Error loading analytics report:', err)
+        setReportError(err.message || 'Failed to load report data.')
+      } finally {
+        setLoadingReport(false)
+      }
+    }
+
+    loadReportData()
+  }, [profile, timezone, reportMonth, reportYear])
 
   // Calculation helpers
   const totalBookings = bookings.length
@@ -268,6 +333,125 @@ export default function Analytics() {
       }
     }
   })
+
+  // --- Monthly Business Report Calculations ---
+  const repTotalBookings = reportBookings.length
+  const repConfirmed = reportBookings.filter(b => b.status === 'confirmed').length
+  const repCompleted = reportBookings.filter(b => b.status === 'completed').length
+  const repConfirmedCompleted = repConfirmed + repCompleted
+  const repPending = reportBookings.filter(b => b.status === 'pending').length
+  const repCancelled = reportBookings.filter(b => b.status === 'cancelled').length
+  const repNoShow = reportBookings.filter(b => b.status === 'no_show').length
+  
+  const repEstimatedRevenue = reportBookings
+    .filter(b => b.status === 'confirmed' || b.status === 'completed')
+    .reduce((sum, b) => sum + (b.service?.price_cents || 0), 0)
+    
+  const repAvgValue = repConfirmedCompleted > 0 ? Math.round(repEstimatedRevenue / repConfirmedCompleted) : 0
+
+  const repOnline = reportBookings.filter(b => b.source === 'online').length
+  const repPhone = reportBookings.filter(b => b.source === 'phone').length
+  const repWalkIn = reportBookings.filter(b => b.source === 'walk_in').length
+  const repAdmin = reportBookings.filter(b => b.source === 'admin').length
+
+  // Busiest Day of Week
+  const repDayCounts: Record<number, number> = {}
+  reportBookings.forEach(b => {
+    const localParts = utcToLocalTimeParts(new Date(b.start_time), timezone)
+    const dayCheck = new Date(Date.UTC(localParts.year, localParts.month, localParts.day))
+    const dayOfWeek = dayCheck.getUTCDay()
+    repDayCounts[dayOfWeek] = (repDayCounts[dayOfWeek] || 0) + 1
+  })
+  const dayOfWeekNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+  const repBusiestDayEntry = Object.entries(repDayCounts).sort((a, b) => b[1] - a[1])[0]
+  const repBusiestDayStr = repBusiestDayEntry ? `${dayOfWeekNames[Number(repBusiestDayEntry[0])]} (${repBusiestDayEntry[1]} bookings)` : null
+
+  // Most Popular Service
+  const repServicesMap: Record<string, number> = {}
+  reportBookings.forEach(b => {
+    const sName = b.service?.name || 'Unknown Service'
+    repServicesMap[sName] = (repServicesMap[sName] || 0) + 1
+  })
+  const repPopularServiceEntry = Object.entries(repServicesMap).sort((a, b) => b[1] - a[1])[0]
+  const repPopularService = repPopularServiceEntry ? { name: repPopularServiceEntry[0], count: repPopularServiceEntry[1] } : null
+
+  // MoM Comparison Calculations
+  const prevTotal = prevReportBookings.length
+  const prevEstimatedRevenue = prevReportBookings
+    .filter(b => b.status === 'confirmed' || b.status === 'completed')
+    .reduce((sum, b) => sum + (b.service?.price_cents || 0), 0)
+  const prevOnline = prevReportBookings.filter(b => b.source === 'online').length
+  const prevBad = prevReportBookings.filter(b => b.status === 'cancelled' || b.status === 'no_show').length
+
+  let prevMonthIdx = reportMonth - 1
+  let prevYearNum = reportYear
+  if (reportMonth === 0) {
+    prevMonthIdx = 11
+    prevYearNum = reportYear - 1
+  }
+  const prevMonthName = `${monthNames[prevMonthIdx]} ${prevYearNum}`
+
+  const bookingDiff = repTotalBookings - prevTotal
+  const momBookingText = bookingDiff > 0
+    ? `Bookings increased by ${bookingDiff} compared to ${prevMonthName}.`
+    : bookingDiff < 0
+    ? `Bookings decreased by ${Math.abs(bookingDiff)} compared to ${prevMonthName}.`
+    : `Booking count remained unchanged compared to ${prevMonthName}.`
+
+  const revenueDiff = repEstimatedRevenue - prevEstimatedRevenue
+  const momRevenueText = revenueDiff > 0
+    ? `Revenue increased by R ${((revenueDiff) / 100).toFixed(2)} compared to ${prevMonthName}.`
+    : revenueDiff < 0
+    ? `Revenue decreased by R ${((Math.abs(revenueDiff)) / 100).toFixed(2)} compared to ${prevMonthName}.`
+    : `Revenue remained unchanged compared to ${prevMonthName}.`
+
+  const onlineDiff = repOnline - prevOnline
+  const momOnlineText = onlineDiff > 0
+    ? `Online bookings increased by ${onlineDiff} compared to ${prevMonthName}.`
+    : onlineDiff < 0
+    ? `Online bookings decreased by ${Math.abs(onlineDiff)} compared to ${prevMonthName}.`
+    : `Online bookings remained unchanged compared to ${prevMonthName}.`
+
+  const badDiff = (repCancelled + repNoShow) - prevBad
+  const momBadText = badDiff > 0
+    ? `Cancellations and no-shows increased by ${badDiff} compared to ${prevMonthName}.`
+    : badDiff < 0
+    ? `Cancellations and no-shows decreased by ${Math.abs(badDiff)} compared to ${prevMonthName}.`
+    : `Cancellations and no-shows remained unchanged compared to ${prevMonthName}.`
+
+  // Insights
+  const insightMostBooked = repPopularService
+    ? `The most booked service this month was ${repPopularService.name}, with ${repPopularService.count} bookings representing ${((repPopularService.count / Math.max(1, repTotalBookings)) * 100).toFixed(1)}% of all scheduled grooms.`
+    : null
+
+  let insightRevenue = null
+  if (prevEstimatedRevenue > 0) {
+    const pct = ((repEstimatedRevenue - prevEstimatedRevenue) / prevEstimatedRevenue) * 100
+    insightRevenue = pct > 0
+      ? `Estimated revenue increased by ${pct.toFixed(1)}% compared to ${prevMonthName}.`
+      : pct < 0
+      ? `Estimated revenue decreased by ${Math.abs(pct).toFixed(1)}% compared to ${prevMonthName}.`
+      : `Estimated revenue is unchanged compared to ${prevMonthName}.`
+  } else if (repEstimatedRevenue > 0) {
+    insightRevenue = `First monthly revenue recorded is R ${((repEstimatedRevenue) / 100).toFixed(2)}.`
+  }
+
+  let insightBookings = null
+  if (prevTotal > 0) {
+    const pct = ((repTotalBookings - prevTotal) / prevTotal) * 100
+    insightBookings = pct > 0
+      ? `Booking volume grew by ${pct.toFixed(1)}% compared to ${prevMonthName}.`
+      : pct < 0
+      ? `Booking volume decreased by ${Math.abs(pct).toFixed(1)}% compared to ${prevMonthName}.`
+      : `Booking volume is unchanged compared to ${prevMonthName}.`
+  } else if (repTotalBookings > 0) {
+    insightBookings = `First monthly bookings recorded: ${repTotalBookings} appointments logged.`
+  }
+
+  const repBadCount = repCancelled + repNoShow
+  const insightBadWarning = repTotalBookings > 0 && (repBadCount / repTotalBookings) >= 0.15
+    ? `Warning: Cancelled appointments and no-shows represent ${(repBadCount / repTotalBookings * 100).toFixed(1)}% of all bookings this month. Consider checking with clients before slot times.`
+    : null
 
   // Trigger manual refresh
   const handleRefresh = async () => {
@@ -777,6 +961,227 @@ export default function Analytics() {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Monthly Business Report Section */}
+          <div className="no-print mt-8">
+            <SectionCard
+              title="Monthly Business Report"
+              icon={<FileText className="w-5 h-5" />}
+            >
+              <div className="space-y-6">
+                <p className="text-sm text-slate-500 font-medium">
+                  Generate a clean, printable operational performance report for any specific month. This aggregates bookings, services, new clients, and compares them against the previous month.
+                </p>
+                
+                {/* Controls */}
+                <div className="flex flex-wrap items-center gap-4 bg-slate-50 border border-slate-200/60 p-4 rounded-2xl no-print">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs font-bold text-slate-550 uppercase tracking-wider">Month</span>
+                    <select
+                      value={reportMonth}
+                      onChange={e => setReportMonth(Number(e.target.value))}
+                      className="px-3 py-1.5 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 bg-white cursor-pointer text-slate-800"
+                    >
+                      {monthNames.map((name, idx) => (
+                        <option key={name} value={idx}>{name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs font-bold text-slate-550 uppercase tracking-wider">Year</span>
+                    <select
+                      value={reportYear}
+                      onChange={e => setReportYear(Number(e.target.value))}
+                      className="px-3 py-1.5 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 bg-white cursor-pointer text-slate-800"
+                    >
+                      {Array.from({ length: 5 }, (_, idx) => new Date().getFullYear() - idx).map(year => (
+                        <option key={year} value={year}>{year}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center space-x-1.5 cursor-pointer ml-auto"
+                  >
+                    <span>Print Report</span>
+                  </button>
+                </div>
+
+                {/* Report Render Area */}
+                {loadingReport ? (
+                  <div className="py-12 text-center text-slate-400 font-semibold text-sm">
+                    Loading report details...
+                  </div>
+                ) : reportError ? (
+                  <div className="py-4 text-red-650 text-sm font-semibold">
+                    {reportError}
+                  </div>
+                ) : (
+                  <div id="monthly-business-report-print-area" className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 space-y-6">
+                    {/* Print Styles */}
+                    <style>{`
+                      @media print {
+                        body * {
+                          visibility: hidden;
+                        }
+                        #monthly-business-report-print-area, #monthly-business-report-print-area * {
+                          visibility: visible;
+                        }
+                        #monthly-business-report-print-area {
+                          position: absolute;
+                          left: 0;
+                          top: 0;
+                          width: 100%;
+                          border: none !important;
+                          padding: 0 !important;
+                          margin: 0 !important;
+                          box-shadow: none !important;
+                        }
+                        .no-print {
+                          display: none !important;
+                        }
+                      }
+                    `}</style>
+
+                    {/* Header info */}
+                    <div className="border-b border-slate-200 pb-4 flex justify-between items-end">
+                      <div>
+                        <h2 className="text-xl font-black text-slate-900 tracking-tight">Monthly Business Performance Report</h2>
+                        <p className="text-xs text-slate-500 font-semibold mt-1">
+                          Parlour: Dog Parlour • Timezone: {timezone}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-black text-indigo-650">{monthNames[reportMonth]} {reportYear}</p>
+                        <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mt-0.5">
+                          Generated: {new Date().toLocaleDateString('en-ZA', { year: 'numeric', month: 'short', day: 'numeric' })}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Report KPI Metrics Grid */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="border border-slate-100 bg-slate-50/20 p-4 rounded-2xl text-center">
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Estimated Revenue</span>
+                        <p className="text-xl font-black text-indigo-650 mt-1">{formatPrice(repEstimatedRevenue)}</p>
+                      </div>
+                      <div className="border border-slate-100 bg-slate-50/20 p-4 rounded-2xl text-center">
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Total Bookings</span>
+                        <p className="text-xl font-black text-slate-800 mt-1">{repTotalBookings}</p>
+                      </div>
+                      <div className="border border-slate-100 bg-slate-50/20 p-4 rounded-2xl text-center">
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Grooms Realized</span>
+                        <p className="text-xl font-black text-slate-800 mt-1">{repConfirmedCompleted}</p>
+                      </div>
+                      <div className="border border-slate-100 bg-slate-50/20 p-4 rounded-2xl text-center">
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">New Customers</span>
+                        <p className="text-xl font-black text-slate-850 mt-1">{newCustomersCount}</p>
+                      </div>
+                    </div>
+
+                    {/* Detailed Status Breakdown and Source Mix */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                      {/* Status counts */}
+                      <div className="border border-slate-150 p-4 rounded-2xl space-y-3 bg-white">
+                        <h4 className="text-[10px] font-black text-slate-450 uppercase tracking-widest block border-b border-slate-100 pb-1.5">Appointment Statuses</h4>
+                        <div className="space-y-2 text-xs font-semibold">
+                          <div className="flex justify-between items-center">
+                            <span className="text-slate-500">Confirmed Slots:</span>
+                            <span className="font-bold text-slate-800">{repConfirmed}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-slate-500">Completed Appointments:</span>
+                            <span className="font-bold text-slate-800">{repCompleted}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-slate-500">Pending Requests:</span>
+                            <span className="font-bold text-slate-800">{repPending}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-slate-550">Cancelled Bookings:</span>
+                            <span className="font-bold text-slate-800">{repCancelled}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-slate-500">Client No-Shows:</span>
+                            <span className="font-bold text-slate-800">{repNoShow}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Sources */}
+                      <div className="border border-slate-150 p-4 rounded-2xl space-y-3 bg-white">
+                        <h4 className="text-[10px] font-black text-slate-450 uppercase tracking-widest block border-b border-slate-100 pb-1.5">Booking Sources</h4>
+                        <div className="space-y-2 text-xs font-semibold">
+                          <div className="flex justify-between items-center">
+                            <span className="text-slate-500">Online Bookings:</span>
+                            <span className="font-bold text-slate-800">{repOnline} <span className="text-slate-400 font-normal">({repTotalBookings > 0 ? (repOnline / repTotalBookings * 100).toFixed(0) : 0}%)</span></span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-slate-500">Phone bookings:</span>
+                            <span className="font-bold text-slate-800">{repPhone} <span className="text-slate-400 font-normal">({repTotalBookings > 0 ? (repPhone / repTotalBookings * 100).toFixed(0) : 0}%)</span></span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-slate-500">Walk-ins:</span>
+                            <span className="font-bold text-slate-800">{repWalkIn} <span className="text-slate-400 font-normal">({repTotalBookings > 0 ? (repWalkIn / repTotalBookings * 100).toFixed(0) : 0}%)</span></span>
+                          </div>
+                          {repAdmin > 0 && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-slate-500">Other manual:</span>
+                              <span className="font-bold text-slate-800">{repAdmin} <span className="text-slate-400 font-normal">({repTotalBookings > 0 ? (repAdmin / repTotalBookings * 100).toFixed(0) : 0}%)</span></span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Operating Details & MoM */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                      <div className="border border-slate-150 p-4 rounded-2xl space-y-3 bg-white text-xs font-semibold">
+                        <h4 className="text-[10px] font-black text-slate-455 uppercase tracking-widest block border-b border-slate-100 pb-1.5">Operating Details</h4>
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-slate-500">Average Booking Value:</span>
+                            <span className="font-bold text-slate-800">{formatPrice(repAvgValue)}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-slate-500">Most Popular Service:</span>
+                            <span className="font-bold text-slate-800">{repPopularService ? `${repPopularService.name} (${repPopularService.count})` : 'N/A'}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-slate-500">Busiest Day of Week:</span>
+                            <span className="font-bold text-slate-800">{repBusiestDayStr || 'N/A'}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Month over Month comparison */}
+                      <div className="border border-slate-150 p-4 rounded-2xl space-y-3 bg-slate-50/10 text-xs font-semibold">
+                        <h4 className="text-[10px] font-black text-slate-450 uppercase tracking-widest block border-b border-slate-100 pb-1.5">Month-Over-Month Comparison</h4>
+                        <div className="space-y-2 text-slate-700 font-medium">
+                          <p>• {momRevenueText}</p>
+                          <p>• {momBookingText}</p>
+                          <p>• {momOnlineText}</p>
+                          <p>• {momBadText}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Rule based business insights */}
+                    <div className="border border-indigo-100 bg-indigo-50/20 p-4 rounded-2xl space-y-3 text-xs">
+                      <h4 className="text-[10px] font-black text-indigo-755 uppercase tracking-widest block border-b border-indigo-150/40 pb-1.5">Business Insights & Observations</h4>
+                      <div className="space-y-2 leading-relaxed text-slate-700 font-medium">
+                        {insightMostBooked && <p className="flex items-start gap-2"><span className="text-indigo-650 font-bold shrink-0">•</span> <span>{insightMostBooked}</span></p>}
+                        {insightRevenue && <p className="flex items-start gap-2"><span className="text-indigo-650 font-bold shrink-0">•</span> <span>{insightRevenue}</span></p>}
+                        {insightBookings && <p className="flex items-start gap-2"><span className="text-indigo-650 font-bold shrink-0">•</span> <span>{insightBookings}</span></p>}
+                        {insightBadWarning && <p className="flex items-start gap-2 text-amber-800"><span className="text-amber-600 font-bold shrink-0">⚠️</span> <span>{insightBadWarning}</span></p>}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </SectionCard>
           </div>
         </div>
       )}
