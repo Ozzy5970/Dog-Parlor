@@ -17,6 +17,8 @@ export interface CustomerHistory {
     size: string | null
     notes: string | null
     age_years: number | null
+    species: string
+    is_active: boolean
   }>
   bookings: Array<{
     id: string
@@ -31,6 +33,14 @@ export interface CustomerHistory {
   household: {
     id: string
     name: string
+    address_line_1: string | null
+    address_line_2: string | null
+    suburb: string | null
+    city: string | null
+    province: string | null
+    postal_code: string | null
+    country: string
+    household_member_names: string[]
   } | null
 }
 
@@ -38,10 +48,18 @@ export interface Household {
   id: string
   name: string
   business_id: string
+  address_line_1: string | null
+  address_line_2: string | null
+  suburb: string | null
+  city: string | null
+  province: string | null
+  postal_code: string | null
+  country: string
+  household_member_names: string[]
 }
 
 /**
- * Fetches all households for the business to enable quick selection/linking.
+ * Fetches all households for the business.
  */
 export async function fetchHouseholds(businessId: string): Promise<Household[]> {
   const { data, error } = await supabase
@@ -55,35 +73,190 @@ export async function fetchHouseholds(businessId: string): Promise<Household[]> 
 }
 
 /**
- * Creates a new household record.
+ * Updates customer details and household address details in one transaction-like block.
  */
-export async function createHousehold(businessId: string, name: string): Promise<Household> {
-  const { data, error } = await supabase
-    .from('households')
-    .insert({
-      business_id: businessId,
-      name: name.trim()
+export async function updateCustomerProfile(
+  businessId: string,
+  customerId: string,
+  householdId: string | null,
+  customerUpdates: {
+    full_name: string
+    surname: string | null
+    email: string | null
+    phone: string
+  },
+  householdUpdates: {
+    address_line_1: string | null
+    address_line_2: string | null
+    suburb: string | null
+    city: string | null
+    province: string | null
+    postal_code: string | null
+    country: string
+    household_member_names: string[]
+  }
+): Promise<void> {
+  // 1. Update customer profile
+  const { error: custError } = await supabase
+    .from('customers')
+    .update({
+      full_name: customerUpdates.full_name.trim(),
+      surname: customerUpdates.surname?.trim() || null,
+      email: customerUpdates.email?.trim() || null,
+      phone: customerUpdates.phone.trim()
     })
-    .select('*')
-    .single()
+    .eq('id', customerId)
+    .eq('business_id', businessId)
 
-  if (error) throw error
-  return data
+  if (custError) throw custError
+
+  // 2. Update household address/members (if linked)
+  if (householdId) {
+    const { error: hhError } = await supabase
+      .from('households')
+      .update({
+        address_line_1: householdUpdates.address_line_1?.trim() || null,
+        address_line_2: householdUpdates.address_line_2?.trim() || null,
+        suburb: householdUpdates.suburb?.trim() || null,
+        city: householdUpdates.city?.trim() || null,
+        province: householdUpdates.province?.trim() || null,
+        postal_code: householdUpdates.postal_code?.trim() || null,
+        country: householdUpdates.country.trim() || 'South Africa',
+        household_member_names: householdUpdates.household_member_names
+      })
+      .eq('id', householdId)
+      .eq('business_id', businessId)
+
+    if (hhError) throw hhError
+  }
 }
 
 /**
- * Links a customer to a household. Set householdId to null to unlink.
+ * Adds a new pet profile to the customer and household.
+ * Performs a duplicate check on active pets in the same household/customer profile first.
  */
-export async function linkCustomerToHousehold(
+export async function addPetToCustomer(
   businessId: string,
   customerId: string,
-  householdId: string | null
-): Promise<void> {
+  householdId: string | null,
+  pet: {
+    name: string
+    species: string
+    breed: string | null
+    size: string | null
+    age_years: number | null
+    notes: string | null
+  }
+): Promise<{ success: boolean; petId?: string; error?: string }> {
+  const cleanName = pet.name.trim()
+
+  if (pet.age_years !== null && (pet.age_years < 0 || pet.age_years > 40)) {
+    return { success: false, error: 'Pet age must be between 0 and 40.' }
+  }
+
+  // 1. Duplicate active pet check (scoping within customer or household context)
+  let existingQuery = supabase
+    .from('pets')
+    .select('id')
+    .eq('business_id', businessId)
+    .eq('is_active', true)
+    .ilike('name', cleanName)
+
+  if (householdId) {
+    existingQuery = existingQuery.or(`customer_id.eq.${customerId},household_id.eq.${householdId}`)
+  } else {
+    existingQuery = existingQuery.eq('customer_id', customerId)
+  }
+
+  const { data: existing, error: fetchErr } = await existingQuery
+  if (fetchErr) throw fetchErr
+
+  if (existing && existing.length > 0) {
+    return { success: false, error: `A pet named "${cleanName}" already exists on this profile.` }
+  }
+
+  // 2. Insert pet profile
+  const { data: newPet, error: insertErr } = await supabase
+    .from('pets')
+    .insert({
+      business_id: businessId,
+      customer_id: customerId,
+      household_id: householdId,
+      name: cleanName,
+      species: pet.species || 'dog',
+      breed: pet.breed?.trim() || null,
+      size: pet.size || null,
+      age_years: pet.age_years,
+      notes: pet.notes?.trim() || null,
+      is_active: true
+    })
+    .select('id')
+    .single()
+
+  if (insertErr) throw insertErr
+
+  // 3. Populate customer_pets link
+  const { error: linkErr } = await supabase
+    .from('customer_pets')
+    .insert({
+      customer_id: customerId,
+      pet_id: newPet.id,
+      business_id: businessId,
+      relationship: 'owner'
+    })
+
+  if (linkErr) throw linkErr
+
+  return { success: true, petId: newPet.id }
+}
+
+/**
+ * Soft archives a pet by setting is_active = false and archived_at = now().
+ */
+export async function archivePet(businessId: string, petId: string): Promise<void> {
   const { error } = await supabase
-    .from('customers')
-    .update({ household_id: householdId })
-    .eq('id', customerId)
-    .eq('business_id', businessId) // Enforce RLS/business isolation safety
+    .from('pets')
+    .update({
+      is_active: false,
+      archived_at: new Date().toISOString()
+    })
+    .eq('id', petId)
+    .eq('business_id', businessId)
+
+  if (error) throw error
+}
+
+/**
+ * Updates details of an active pet profile.
+ */
+export async function updatePetProfile(
+  businessId: string,
+  petId: string,
+  updates: {
+    name: string
+    breed: string | null
+    size: string | null
+    notes: string | null
+    age_years: number | null
+    species: string
+  }
+): Promise<void> {
+  if (updates.age_years !== null && (updates.age_years < 0 || updates.age_years > 40)) {
+    throw new Error('Pet age must be between 0 and 40.')
+  }
+
+  const { error } = await supabase
+    .from('pets')
+    .update({
+      name: updates.name.trim(),
+      breed: updates.breed?.trim() || null,
+      size: updates.size || null,
+      notes: updates.notes?.trim() || null,
+      age_years: updates.age_years,
+      species: updates.species
+    })
+    .eq('id', petId)
+    .eq('business_id', businessId)
 
   if (error) throw error
 }
@@ -97,7 +270,6 @@ export async function searchCustomers(
 ): Promise<CustomerHistory[]> {
   const cleanSearch = searchQuery.trim()
 
-  // Base select query
   const selectQuery = `
     *,
     pets (
@@ -106,7 +278,9 @@ export async function searchCustomers(
       breed,
       size,
       notes,
-      age_years
+      age_years,
+      species,
+      is_active
     ),
     bookings (
       id,
@@ -120,12 +294,19 @@ export async function searchCustomers(
     ),
     household:households (
       id,
-      name
+      name,
+      address_line_1,
+      address_line_2,
+      suburb,
+      city,
+      province,
+      postal_code,
+      country,
+      household_member_names
     )
   `
 
   if (!cleanSearch) {
-    // If no search query, return recent customers (up to 100)
     const { data, error } = await supabase
       .from('customers')
       .select(selectQuery)
@@ -158,11 +339,9 @@ export async function searchCustomers(
   const matchedCustomerIds = Array.from(new Set((petData || []).map(p => p.customer_id)))
   const directCustomerIds = new Set((directData || []).map(c => c.id))
   
-  // Filter out customer IDs that were already retrieved via direct query
   const missingCustomerIds = matchedCustomerIds.filter(id => !directCustomerIds.has(id))
 
   if (missingCustomerIds.length > 0) {
-    // Query remaining customers matching pet name
     const { data: linkedData, error: linkedErr } = await supabase
       .from('customers')
       .select(selectQuery)
@@ -175,23 +354,4 @@ export async function searchCustomers(
   }
 
   return (directData || []) as unknown as CustomerHistory[]
-}
-
-/**
- * Fetches other household members linked to the same household_id (excluding the current customer).
- */
-export async function fetchHouseholdMembers(
-  businessId: string,
-  householdId: string,
-  excludeCustomerId: string
-): Promise<Array<{ id: string; full_name: string; surname: string | null; phone: string }>> {
-  const { data, error } = await supabase
-    .from('customers')
-    .select('id, full_name, surname, phone')
-    .eq('business_id', businessId)
-    .eq('household_id', householdId)
-    .neq('id', excludeCustomerId)
-
-  if (error) throw error
-  return data || []
 }

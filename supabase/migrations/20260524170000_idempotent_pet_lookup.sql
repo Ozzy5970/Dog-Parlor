@@ -15,7 +15,6 @@ DROP FUNCTION IF EXISTS public.submit_booking_request(
     numeric,  -- p_pet_age_years
     TEXT      -- p_surname
 );
-
 DROP FUNCTION IF EXISTS public.admin_submit_booking(
     text,  -- p_full_name
     text,  -- p_phone
@@ -32,7 +31,6 @@ DROP FUNCTION IF EXISTS public.admin_submit_booking(
     numeric, -- p_pet_age_years
     text   -- p_surname
 );
-
 -- 1. Create submit_booking_request
 CREATE OR REPLACE FUNCTION public.submit_booking_request(
     p_business_id UUID,
@@ -227,16 +225,12 @@ BEGIN
     END;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 REVOKE EXECUTE ON FUNCTION public.submit_booking_request(
     uuid, text, text, text, text, text, text, text, uuid, timestamptz, text, numeric, text
 ) FROM PUBLIC;
-
 GRANT EXECUTE ON FUNCTION public.submit_booking_request(
     uuid, text, text, text, text, text, text, text, uuid, timestamptz, text, numeric, text
 ) TO anon, authenticated;
-
-
 -- 2. Create admin_submit_booking
 CREATE OR REPLACE FUNCTION public.admin_submit_booking(
     p_full_name text,
@@ -467,11 +461,9 @@ BEGIN
     END;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 REVOKE EXECUTE ON FUNCTION public.admin_submit_booking(
     text, text, text, text, text, text, text, uuid, timestamptz, text, text, text, numeric, text
 ) FROM PUBLIC;
-
 GRANT EXECUTE ON FUNCTION public.admin_submit_booking(
     text, text, text, text, text, text, text, uuid, timestamptz, text, text, text, numeric, text
 ) TO authenticated;

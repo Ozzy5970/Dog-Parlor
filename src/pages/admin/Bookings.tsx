@@ -429,6 +429,21 @@ export default function Bookings() {
                   const bProps = getStatusBadgeProps(booking.status)
                   return <StatusBadge status={bProps.status} label={bProps.label} />
                 })()}
+                {booking.customer && booking.created_at && (
+                  (() => {
+                    const custCreated = new Date(booking.customer.created_at).getTime()
+                    const bookCreated = new Date(booking.created_at).getTime()
+                    const isNew = Math.abs(custCreated - bookCreated) < 120 * 1000
+                    if (isNew) {
+                      return (
+                        <span className="px-2 py-0.5 bg-emerald-50 border border-emerald-250 text-emerald-800 text-[9px] font-black rounded-full uppercase tracking-wider">
+                          New Customer
+                        </span>
+                      )
+                    }
+                    return null
+                  })()
+                )}
                 <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-full">
                   {sourceLabels[booking.source] || booking.source || 'Online'}
                 </span>

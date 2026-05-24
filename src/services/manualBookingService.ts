@@ -181,7 +181,8 @@ export async function adminSubmitBooking(
     p_customer_notes: input.customerNotes || null,
     p_admin_notes: input.adminNotes || null,
     p_pet_age_years: input.petAgeYears !== undefined ? input.petAgeYears : null,
-    p_surname: input.surname || null
+    p_surname: input.surname || null,
+    p_pet_species: 'dog'
   })
 
   if (error) {

@@ -250,7 +250,6 @@ BEGIN
     );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Limit execution permissions to prevent unauthorized access
 REVOKE EXECUTE ON FUNCTION public.get_public_available_slots(UUID, UUID, DATE) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.get_public_available_slots(UUID, UUID, DATE) TO anon, authenticated;

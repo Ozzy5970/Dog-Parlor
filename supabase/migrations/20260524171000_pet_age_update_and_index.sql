@@ -3,7 +3,6 @@
 -- 1. Create functional lookup index
 CREATE INDEX IF NOT EXISTS idx_pets_customer_name_lower
 ON public.pets (business_id, customer_id, LOWER(TRIM(name)));
-
 -- 2. Recreate submit_booking_request with fixed age_years COALESCE order
 CREATE OR REPLACE FUNCTION public.submit_booking_request(
     p_business_id UUID,
@@ -198,8 +197,6 @@ BEGIN
     END;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
-
 -- 3. Recreate admin_submit_booking with fixed age_years COALESCE order
 CREATE OR REPLACE FUNCTION public.admin_submit_booking(
     p_full_name text,
@@ -430,19 +427,15 @@ BEGIN
     END;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 REVOKE EXECUTE ON FUNCTION public.submit_booking_request(
     uuid, text, text, text, text, text, text, text, uuid, timestamptz, text, numeric, text
 ) FROM PUBLIC;
-
 GRANT EXECUTE ON FUNCTION public.submit_booking_request(
     uuid, text, text, text, text, text, text, text, uuid, timestamptz, text, numeric, text
 ) TO anon, authenticated;
-
 REVOKE EXECUTE ON FUNCTION public.admin_submit_booking(
     text, text, text, text, text, text, text, uuid, timestamptz, text, text, text, numeric, text
 ) FROM PUBLIC;
-
 GRANT EXECUTE ON FUNCTION public.admin_submit_booking(
     text, text, text, text, text, text, text, uuid, timestamptz, text, text, text, numeric, text
 ) TO authenticated;

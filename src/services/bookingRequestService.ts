@@ -42,6 +42,7 @@ export async function submitBookingRequest(input: BookingRequestInput): Promise<
       p_customer_notes: input.customer_notes || null,
       p_pet_age_years: input.pet_age_years !== undefined ? input.pet_age_years : null,
       p_surname: input.surname || null,
+      p_pet_species: 'dog',
     })
 
     if (error) {

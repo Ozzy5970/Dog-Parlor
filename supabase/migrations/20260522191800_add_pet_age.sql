@@ -4,13 +4,10 @@
 -- Add the age_years column to the pets table if it does not exist
 ALTER TABLE public.pets 
 ADD COLUMN IF NOT EXISTS age_years numeric(4,1);
-
 -- Safely recreate the check constraint
 ALTER TABLE public.pets DROP CONSTRAINT IF EXISTS check_pet_age;
 ALTER TABLE public.pets 
 ADD CONSTRAINT check_pet_age CHECK (age_years IS NULL OR (age_years >= 0.0 AND age_years <= 40.0));
-
-
 -- 2. Drop Old Function Signatures to avoid overload conflicts
 DROP FUNCTION IF EXISTS public.submit_booking_request(
     uuid,  -- p_business_id
@@ -25,7 +22,6 @@ DROP FUNCTION IF EXISTS public.submit_booking_request(
     timestamptz, -- p_start_time
     text   -- p_customer_notes
 );
-
 DROP FUNCTION IF EXISTS public.admin_submit_booking(
     text,  -- p_full_name
     text,  -- p_phone
@@ -40,8 +36,6 @@ DROP FUNCTION IF EXISTS public.admin_submit_booking(
     text,  -- p_customer_notes
     text   -- p_admin_notes
 );
-
-
 -- 3. Recreate public.submit_booking_request with age_years support
 CREATE OR REPLACE FUNCTION public.submit_booking_request(
     p_business_id UUID,
@@ -209,17 +203,13 @@ BEGIN
     END;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Explicitly set submit_booking_request execute permissions
 REVOKE EXECUTE ON FUNCTION public.submit_booking_request(
     uuid, text, text, text, text, text, text, text, uuid, timestamptz, text, numeric
 ) FROM PUBLIC;
-
 GRANT EXECUTE ON FUNCTION public.submit_booking_request(
     uuid, text, text, text, text, text, text, text, uuid, timestamptz, text, numeric
 ) TO anon, authenticated;
-
-
 -- 4. Recreate public.admin_submit_booking with age_years support
 CREATE OR REPLACE FUNCTION public.admin_submit_booking(
     p_full_name text,
@@ -425,12 +415,10 @@ BEGIN
     END;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Explicitly set admin_submit_booking execute permissions
 REVOKE EXECUTE ON FUNCTION public.admin_submit_booking(
     text, text, text, text, text, text, text, uuid, timestamptz, text, text, text, numeric
 ) FROM PUBLIC;
-
 GRANT EXECUTE ON FUNCTION public.admin_submit_booking(
     text, text, text, text, text, text, text, uuid, timestamptz, text, text, text, numeric
 ) TO authenticated;

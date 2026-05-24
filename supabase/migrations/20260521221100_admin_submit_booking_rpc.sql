@@ -198,7 +198,6 @@ BEGIN
     END;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Lock down execution permissions
 REVOKE EXECUTE ON FUNCTION public.admin_submit_booking FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.admin_submit_booking TO authenticated;

@@ -8,14 +8,11 @@ CREATE TABLE IF NOT EXISTS public.households (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
 -- Composite Unique Constraint to enable composite foreign key referencing (business integrity)
 ALTER TABLE public.households
 ADD CONSTRAINT households_id_business_id_unique UNIQUE (id, business_id);
-
 -- Enable RLS
 ALTER TABLE public.households ENABLE ROW LEVEL SECURITY;
-
 -- Explicit RLS Policy for Authenticated Admins
 DROP POLICY IF EXISTS "Authenticated users manage own business households" ON public.households;
 CREATE POLICY "Authenticated users manage own business households"
@@ -24,19 +21,16 @@ FOR ALL
 TO authenticated
 USING (business_id = get_user_business_id())
 WITH CHECK (business_id = get_user_business_id());
-
 -- Safe Trigger Creation
 DROP TRIGGER IF EXISTS trg_households_updated_at ON public.households;
 CREATE TRIGGER trg_households_updated_at 
     BEFORE UPDATE ON public.households 
     FOR EACH ROW EXECUTE FUNCTION set_updated_at();
-
 -- 2. Alter Customers Table
 -- Add surname (nullable)
 ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS surname TEXT;
 -- Add household_id (nullable)
 ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS household_id UUID REFERENCES public.households(id) ON DELETE SET NULL;
-
 -- Composite Foreign Key to guarantee a customer can only be linked to a household belonging to the same business
 ALTER TABLE public.customers DROP CONSTRAINT IF EXISTS customers_household_same_business_fk;
 ALTER TABLE public.customers
@@ -44,7 +38,6 @@ ADD CONSTRAINT customers_household_same_business_fk
 FOREIGN KEY (household_id, business_id)
 REFERENCES public.households(id, business_id)
 ON DELETE SET NULL;
-
 -- 3. Create Required Indexes for Search Optimization
 CREATE INDEX IF NOT EXISTS idx_households_business_id ON public.households(business_id);
 CREATE INDEX IF NOT EXISTS idx_customers_business_id ON public.customers(business_id);
@@ -53,13 +46,10 @@ CREATE INDEX IF NOT EXISTS idx_customers_surname ON public.customers(surname);
 CREATE INDEX IF NOT EXISTS idx_customers_household_id ON public.customers(household_id);
 CREATE INDEX IF NOT EXISTS idx_pets_business_id ON public.pets(business_id);
 CREATE INDEX IF NOT EXISTS idx_pets_name ON public.pets(name);
-
 -- Explicit Permissions on households
 REVOKE ALL ON public.households FROM PUBLIC;
 REVOKE ALL ON public.households FROM anon;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.households TO authenticated;
-
-
 -- 4. Rebuild public.submit_booking_request with optional surname support
 -- Drop the exact old signature first to prevent overload conflicts
 DROP FUNCTION IF EXISTS public.submit_booking_request(
@@ -76,7 +66,6 @@ DROP FUNCTION IF EXISTS public.submit_booking_request(
     text,     -- p_customer_notes
     numeric   -- p_pet_age_years
 );
-
 CREATE OR REPLACE FUNCTION public.submit_booking_request(
     p_business_id UUID,
     p_full_name TEXT,
@@ -251,17 +240,13 @@ BEGIN
     END;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Explicitly configure execution privileges
 REVOKE EXECUTE ON FUNCTION public.submit_booking_request(
     uuid, text, text, text, text, text, text, text, uuid, timestamptz, text, numeric, text
 ) FROM PUBLIC;
-
 GRANT EXECUTE ON FUNCTION public.submit_booking_request(
     uuid, text, text, text, text, text, text, text, uuid, timestamptz, text, numeric, text
 ) TO anon, authenticated;
-
-
 -- 5. Recreate public.admin_submit_booking with optional surname support
 -- Drop the exact old signature first to prevent overload conflicts
 DROP FUNCTION IF EXISTS public.admin_submit_booking(
@@ -279,7 +264,6 @@ DROP FUNCTION IF EXISTS public.admin_submit_booking(
     text,  -- p_admin_notes
     numeric -- p_pet_age_years
 );
-
 CREATE OR REPLACE FUNCTION public.admin_submit_booking(
     p_full_name text,
     p_phone text,
@@ -490,12 +474,10 @@ BEGIN
     END;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Explicitly configure execution privileges
 REVOKE EXECUTE ON FUNCTION public.admin_submit_booking(
     text, text, text, text, text, text, text, uuid, timestamptz, text, text, text, numeric, text
 ) FROM PUBLIC;
-
 GRANT EXECUTE ON FUNCTION public.admin_submit_booking(
     text, text, text, text, text, text, text, uuid, timestamptz, text, text, text, numeric, text
 ) TO authenticated;

@@ -1,7 +1,6 @@
 -- Enable necessary extensions
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 CREATE EXTENSION IF NOT EXISTS btree_gist;
-
 -- Update trigger function
 CREATE OR REPLACE FUNCTION set_updated_at()
 RETURNS TRIGGER AS $$
@@ -10,7 +9,6 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
 -- 1. businesses
 CREATE TABLE businesses (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -27,7 +25,6 @@ CREATE TABLE businesses (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
 -- 2. business_settings
 CREATE TABLE business_settings (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -46,7 +43,6 @@ CREATE TABLE business_settings (
     CONSTRAINT check_max_advance CHECK (max_advance_days > 0),
     CONSTRAINT check_approval_mode CHECK (booking_approval_mode IN ('manual_approval'))
 );
-
 -- 3. business_opening_hours
 CREATE TABLE business_opening_hours (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -63,7 +59,6 @@ CREATE TABLE business_opening_hours (
         (is_closed = FALSE AND open_time IS NOT NULL AND close_time IS NOT NULL AND open_time < close_time)
     )
 );
-
 -- 4. profiles
 CREATE TABLE profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -74,7 +69,6 @@ CREATE TABLE profiles (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
 -- 5. services
 CREATE TABLE services (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -89,7 +83,6 @@ CREATE TABLE services (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
 -- 6. customers
 CREATE TABLE customers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -101,7 +94,6 @@ CREATE TABLE customers (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     UNIQUE(business_id, phone)
 );
-
 -- 7. pets
 CREATE TABLE pets (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -114,7 +106,6 @@ CREATE TABLE pets (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
 -- 8. bookings
 CREATE TABLE bookings (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -132,7 +123,6 @@ CREATE TABLE bookings (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT check_booking_times CHECK (end_time > start_time)
 );
-
 -- 9. blocked_slots
 CREATE TABLE blocked_slots (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -144,7 +134,6 @@ CREATE TABLE blocked_slots (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT check_blocked_times CHECK (end_time > start_time)
 );
-
 -- 10. Constraints and Triggers for Double-booking Protection
 -- Apply GiST exclusion constraint on bookings
 ALTER TABLE bookings
@@ -153,7 +142,6 @@ EXCLUDE USING gist (
     business_id WITH =,
     tstzrange(start_time, end_time, '[)') WITH &&
 ) WHERE (status IN ('pending', 'confirmed'));
-
 -- Trigger function to check bookings against blocked slots
 CREATE OR REPLACE FUNCTION check_booking_against_blocked_slots()
 RETURNS TRIGGER AS $$
@@ -170,12 +158,10 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
 CREATE TRIGGER trg_check_booking_blocked_slots
 BEFORE INSERT OR UPDATE ON bookings
 FOR EACH ROW
 EXECUTE FUNCTION check_booking_against_blocked_slots();
-
 -- 10.b. Trigger for Relationship Integrity
 CREATE OR REPLACE FUNCTION validate_booking_relationships()
 RETURNS TRIGGER AS $$
@@ -217,13 +203,10 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
 CREATE TRIGGER trg_validate_booking_relationships
 BEFORE INSERT OR UPDATE ON bookings
 FOR EACH ROW
 EXECUTE FUNCTION validate_booking_relationships();
-
-
 -- updated_at triggers
 CREATE TRIGGER trg_businesses_updated_at BEFORE UPDATE ON businesses FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE TRIGGER trg_business_settings_updated_at BEFORE UPDATE ON business_settings FOR EACH ROW EXECUTE FUNCTION set_updated_at();
@@ -234,13 +217,11 @@ CREATE TRIGGER trg_customers_updated_at BEFORE UPDATE ON customers FOR EACH ROW 
 CREATE TRIGGER trg_pets_updated_at BEFORE UPDATE ON pets FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE TRIGGER trg_bookings_updated_at BEFORE UPDATE ON bookings FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE TRIGGER trg_blocked_slots_updated_at BEFORE UPDATE ON blocked_slots FOR EACH ROW EXECUTE FUNCTION set_updated_at();
-
 -- 11. Indexes
 CREATE INDEX idx_bookings_business_id_times ON bookings(business_id, start_time, end_time);
 CREATE INDEX idx_blocked_slots_business_id_times ON blocked_slots(business_id, start_time, end_time);
 CREATE INDEX idx_services_business_id_active ON services(business_id) WHERE is_active = TRUE;
 CREATE INDEX idx_customers_business_id_phone ON customers(business_id, phone);
-
 -- 12. RLS Policies
 ALTER TABLE businesses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE business_settings ENABLE ROW LEVEL SECURITY;
@@ -251,14 +232,12 @@ ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bookings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE blocked_slots ENABLE ROW LEVEL SECURITY;
-
 -- Helper function to get current user's business_id
 CREATE OR REPLACE FUNCTION get_user_business_id()
 RETURNS UUID 
 SET search_path = public AS $$
     SELECT business_id FROM profiles WHERE id = auth.uid() LIMIT 1;
 $$ LANGUAGE sql STABLE SECURITY DEFINER;
-
 -- Admin policies
 CREATE POLICY "Admin full access on businesses" ON businesses FOR ALL USING (id = get_user_business_id()) WITH CHECK (id = get_user_business_id());
 CREATE POLICY "Admin full access on settings" ON business_settings FOR ALL USING (business_id = get_user_business_id()) WITH CHECK (business_id = get_user_business_id());
@@ -269,12 +248,10 @@ CREATE POLICY "Admin full access on customers" ON customers FOR ALL USING (busin
 CREATE POLICY "Admin full access on pets" ON pets FOR ALL USING (business_id = get_user_business_id()) WITH CHECK (business_id = get_user_business_id());
 CREATE POLICY "Admin full access on bookings" ON bookings FOR ALL USING (business_id = get_user_business_id()) WITH CHECK (business_id = get_user_business_id());
 CREATE POLICY "Admin full access on blocked_slots" ON blocked_slots FOR ALL USING (business_id = get_user_business_id()) WITH CHECK (business_id = get_user_business_id());
-
 -- Public read policies
 CREATE POLICY "Public read active services" ON services FOR SELECT USING (is_active = TRUE);
 CREATE POLICY "Public read opening hours" ON business_opening_hours FOR SELECT USING (TRUE);
 CREATE POLICY "Public read businesses" ON businesses FOR SELECT USING (TRUE);
-
 -- 13. RPC for Public Booking Request
 CREATE OR REPLACE FUNCTION submit_booking_request(
     p_business_id UUID,

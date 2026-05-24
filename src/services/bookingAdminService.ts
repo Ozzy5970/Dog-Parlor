@@ -15,6 +15,8 @@ export interface Booking {
   created_at?: string
   updated_at?: string
   customer: {
+    id: string
+    created_at: string
     full_name: string
     phone: string
     email: string | null
@@ -38,6 +40,8 @@ export async function fetchAdminBookings(businessId: string): Promise<Booking[]>
     .select(`
       *,
       customer:customers (
+        id,
+        created_at,
         full_name,
         phone,
         email
@@ -80,6 +84,8 @@ export async function updateBookingStatus(
     .select(`
       *,
       customer:customers (
+        id,
+        created_at,
         full_name,
         phone,
         email
@@ -115,6 +121,8 @@ export async function updateBookingAdminNotes(
     .select(`
       *,
       customer:customers (
+        id,
+        created_at,
         full_name,
         phone,
         email
@@ -147,6 +155,8 @@ export async function fetchAdminBookingsForRange(
     .select(`
       *,
       customer:customers (
+        id,
+        created_at,
         full_name,
         phone,
         email
