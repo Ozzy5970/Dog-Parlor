@@ -3,7 +3,6 @@ import { Link, useLocation } from 'react-router-dom'
 import { 
   Scissors, 
   CalendarRange, 
-  ShieldCheck, 
   LayoutDashboard, 
   CalendarDays, 
   Sliders, 
@@ -61,13 +60,6 @@ export default function Layout({ children }: LayoutProps) {
                 >
                   <CalendarRange className="w-4 h-4" />
                   <span className="hidden sm:inline">Book Now</span>
-                </Link>
-                <Link
-                  to="/admin/login"
-                  className="px-3 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:text-indigo-600 hover:bg-slate-50 transition-all duration-150 flex items-center space-x-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                >
-                  <ShieldCheck className="w-4 h-4" />
-                  <span className="hidden sm:inline">Admin Portal</span>
                 </Link>
               </>
             ) : (
