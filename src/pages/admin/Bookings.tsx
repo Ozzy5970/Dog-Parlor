@@ -97,6 +97,18 @@ const formatLocalTimePart = (isoString: string): string => {
   })
 }
 
+const formatFilterDate = (dateStr: string): string => {
+  if (!dateStr) return ''
+  const [year, month, day] = dateStr.split('-').map(Number)
+  const date = new Date(Date.UTC(year, month - 1, day))
+  return date.toLocaleDateString(undefined, {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC'
+  })
+}
+
 const sourceLabels: Record<string, string> = {
   online: 'Online',
   phone: 'Phone',
@@ -749,13 +761,22 @@ export default function Bookings() {
               </button>
             )}
           </div>
-          <div className="relative flex">
+          <div className="relative flex w-full">
+            {/* Display layer: styled to look exactly like the search input but hides native placeholder */}
+            <div className="w-full px-4 py-2.5 border border-slate-200 rounded-xl font-medium text-sm bg-white flex items-center justify-between pointer-events-none select-none min-h-[42px]">
+              <span className={dateFilter ? 'text-slate-800' : 'text-slate-400'}>
+                {dateFilter ? formatFilterDate(dateFilter) : 'Choose appointment date'}
+              </span>
+              <Calendar className="w-4 h-4 text-slate-400 shrink-0 ml-2" />
+            </div>
+
+            {/* The invisible native date input stacked on top */}
             <input
               id="date-filter-input"
               type="date"
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
-              className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-800 text-sm bg-white cursor-pointer"
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
             />
           </div>
         </div>
