@@ -234,12 +234,23 @@ export default function Customers() {
   }
 
   // Edit Extra Names list controls inside the modal
-  const handleAddExtraName = (e: React.MouseEvent) => {
-    e.preventDefault()
+  const addExtraName = () => {
     const trimmed = newExtraName.trim()
     if (trimmed && !extraNames.includes(trimmed)) {
       setExtraNames(prev => [...prev, trimmed])
       setNewExtraName('')
+    }
+  }
+
+  const handleAddExtraName = (e: React.MouseEvent) => {
+    e.preventDefault()
+    addExtraName()
+  }
+
+  const handleExtraNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      addExtraName()
     }
   }
 
@@ -978,6 +989,7 @@ export default function Customers() {
                     type="text"
                     value={newExtraName}
                     onChange={e => setNewExtraName(e.target.value)}
+                    onKeyDown={handleExtraNameKeyDown}
                     placeholder="Add family member name, e.g. Andrea"
                     className="flex-grow p-2.5 border border-slate-200 bg-white rounded-xl focus:outline-none text-slate-800"
                   />
