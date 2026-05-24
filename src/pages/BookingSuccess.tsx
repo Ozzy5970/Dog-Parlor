@@ -1,6 +1,5 @@
 import { useLocation, Link } from 'react-router-dom'
-import { CheckCircle2, MessageSquare, ArrowLeft, Tag, Calendar, Clock, PawPrint, User } from 'lucide-react'
-import { createWhatsAppLink, getCustomerToParlourMessage } from '../lib/whatsapp'
+import { CheckCircle2, ArrowLeft, Tag, Calendar, Clock, PawPrint, User } from 'lucide-react'
 
 interface BookingDetails {
   serviceName: string
@@ -30,12 +29,7 @@ export default function BookingSuccess() {
     })
   }
 
-  // Helper to construct WhatsApp messaging URL
-  const getWhatsAppUrl = (details: BookingDetails) => {
-    if (!details.whatsappNumber) return '#'
-    const message = getCustomerToParlourMessage(details.petName)
-    return createWhatsAppLink(details.whatsappNumber, message) || '#'
-  }
+
 
   return (
     <div className="max-w-md mx-auto py-8 text-center flex flex-col items-center">
@@ -98,22 +92,6 @@ export default function BookingSuccess() {
       )}
 
       <div className="flex flex-col gap-3 w-full">
-        {bookingDetails?.whatsappNumber && getWhatsAppUrl(bookingDetails) !== '#' ? (
-          <a
-            href={getWhatsAppUrl(bookingDetails)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full inline-flex items-center justify-center px-6 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl transition-all shadow-sm hover:shadow-md gap-2 cursor-pointer duration-150 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-          >
-            <MessageSquare className="w-4.5 h-4.5 fill-current" />
-            <span>Message Parlour on WhatsApp</span>
-          </a>
-        ) : (
-          <div className="w-full py-3.5 px-4 bg-slate-100 text-slate-500 text-sm font-bold rounded-xl text-center border border-slate-200/50">
-            WhatsApp number not configured
-          </div>
-        )}
-
         <Link
           to="/"
           className="w-full inline-flex items-center justify-center px-6 py-3.5 border border-slate-200 hover:bg-slate-50 hover:border-slate-350 text-slate-700 text-sm font-bold rounded-xl transition-all shadow-xs duration-150 cursor-pointer gap-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
