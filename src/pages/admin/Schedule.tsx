@@ -60,6 +60,7 @@ export default function Schedule() {
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth()) // 0-indexed
   const [selectedDateStr, setSelectedDateStr] = useState<string>('')
   const [timezone, setTimezone] = useState('Africa/Johannesburg')
+  const [showClosed, setShowClosed] = useState(false)
 
   // Data Loading State
   const [bookings, setBookings] = useState<Booking[]>([])
@@ -182,9 +183,14 @@ export default function Schedule() {
     setSelectedDateStr(todayStr)
   }, [timezone])
 
+  // Filter bookings client-side: hide cancelled, completed, and no_show by default
+  const filteredBookings = bookings.filter(
+    b => showClosed || b.status === 'pending' || b.status === 'confirmed'
+  )
+
   // Group bookings by local date string
   const bookingsByLocalDateStr: { [key: string]: Booking[] } = {}
-  bookings.forEach((booking) => {
+  filteredBookings.forEach((booking) => {
     const parts = utcToLocalTimeParts(new Date(booking.start_time), timezone)
     const dateStr = `${parts.year}-${String(parts.month + 1).padStart(2, '0')}-${String(parts.day).padStart(2, '0')}`
     if (!bookingsByLocalDateStr[dateStr]) {
@@ -321,9 +327,20 @@ export default function Schedule() {
           <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
             {/* Calendar Controls */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-              <h2 className="text-lg font-black text-slate-800 tracking-tight">
-                {currentMonthLabel}
-              </h2>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                <h2 className="text-lg font-black text-slate-800 tracking-tight">
+                  {currentMonthLabel}
+                </h2>
+                <label className="flex items-center space-x-2 text-xs font-semibold text-slate-500 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={showClosed}
+                    onChange={(e) => setShowClosed(e.target.checked)}
+                    className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 focus:ring-2 cursor-pointer"
+                  />
+                  <span>Show history & closed</span>
+                </label>
+              </div>
               <div className="flex items-center space-x-2">
                 <button
                   onClick={handlePrevMonth}

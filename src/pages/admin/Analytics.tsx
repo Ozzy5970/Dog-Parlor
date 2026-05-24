@@ -346,8 +346,6 @@ export default function Analytics() {
     .filter(b => b.status === 'confirmed' || b.status === 'completed')
     .reduce((sum, b) => sum + (b.service?.price_cents || 0), 0)
     
-  const repAvgValue = repConfirmedCompleted > 0 ? Math.round(repEstimatedRevenue / repConfirmedCompleted) : 0
-
   const repOnline = reportBookings.filter(b => b.source === 'online').length
   const repPhone = reportBookings.filter(b => b.source === 'phone').length
   const repWalkIn = reportBookings.filter(b => b.source === 'walk_in').length
@@ -380,12 +378,13 @@ export default function Analytics() {
     .slice(0, 3)
 
   // MoM Comparison Calculations
-  const prevTotal = prevReportBookings.length
+  const prevConfirmedCompleted = prevReportBookings.filter(b => b.status === 'confirmed' || b.status === 'completed').length
   const prevEstimatedRevenue = prevReportBookings
     .filter(b => b.status === 'confirmed' || b.status === 'completed')
     .reduce((sum, b) => sum + (b.service?.price_cents || 0), 0)
   const prevOnline = prevReportBookings.filter(b => b.source === 'online').length
   const prevBad = prevReportBookings.filter(b => b.status === 'cancelled' || b.status === 'no_show').length
+  const prevTotal = prevReportBookings.length
 
   let prevMonthIdx = reportMonth - 1
   let prevYearNum = reportYear
@@ -395,12 +394,12 @@ export default function Analytics() {
   }
   const prevMonthName = `${monthNames[prevMonthIdx]} ${prevYearNum}`
 
-  const bookingDiff = repTotalBookings - prevTotal
+  const bookingDiff = repConfirmedCompleted - prevConfirmedCompleted
   const bookingLabel = bookingDiff > 0
-    ? `Bookings increased by ${bookingDiff}`
+    ? `Confirmed/completed increased by ${bookingDiff}`
     : bookingDiff < 0
-    ? `Bookings decreased by ${Math.abs(bookingDiff)}`
-    : `Bookings stayed the same`
+    ? `Confirmed/completed decreased by ${Math.abs(bookingDiff)}`
+    : `Confirmed/completed stayed the same`
 
   const revenueDiff = repEstimatedRevenue - prevEstimatedRevenue
   const revenueLabel = revenueDiff > 0
@@ -411,10 +410,10 @@ export default function Analytics() {
 
   const onlineDiff = repOnline - prevOnline
   const onlineLabel = onlineDiff > 0
-    ? `Online bookings increased by ${onlineDiff}`
+    ? `Online requests increased by ${onlineDiff}`
     : onlineDiff < 0
-    ? `Online bookings decreased by ${Math.abs(onlineDiff)}`
-    : `Online bookings stayed the same`
+    ? `Online requests decreased by ${Math.abs(onlineDiff)}`
+    : `Online requests stayed the same`
 
   const badDiff = (repCancelled + repNoShow) - prevBad
   const badLabel = badDiff > 0
@@ -644,7 +643,7 @@ export default function Analytics() {
               {/* Total Bookings */}
               <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs flex flex-col justify-between min-h-[140px]">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Total Bookings</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Requests Received</span>
                   <div className="w-8 h-8 bg-indigo-50 text-indigo-650 rounded-xl flex items-center justify-center">
                     <CalendarRange className="w-4 h-4" />
                   </div>
@@ -652,7 +651,7 @@ export default function Analytics() {
                 <div className="mt-4">
                   <h3 className="text-3xl font-black text-slate-800 tracking-tight">{totalBookings}</h3>
                   <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-wide">
-                    Appointments logged
+                    All requests logged
                   </p>
                 </div>
               </div>
@@ -678,7 +677,7 @@ export default function Analytics() {
               {/* Online Booking Percentage */}
               <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs flex flex-col justify-between min-h-[140px]">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Online Bookings</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Online Requests</span>
                   <div className="w-8 h-8 bg-blue-50 text-blue-650 rounded-xl flex items-center justify-center">
                     <Laptop className="w-4 h-4" />
                   </div>
@@ -688,7 +687,7 @@ export default function Analytics() {
                     {onlinePercentage.toFixed(1)}%
                   </h3>
                   <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-wide">
-                    {onlineCount} of {totalBookings} online requests
+                    {onlineCount} of {totalBookings} total requests
                   </p>
                 </div>
               </div>
@@ -800,16 +799,16 @@ export default function Analytics() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Booking Source Mix */}
               <SectionCard
-                title="Booking Source Mix"
+                title="Requests by Source"
                 icon={<BarChart2 className="w-5 h-5" />}
                 className="flex flex-col justify-between"
               >
                 <div className="space-y-6">
                   {[
-                    { name: 'Online bookings', key: 'online', count: onlineCount, color: 'bg-indigo-600', icon: <Laptop className="w-4 h-4" /> },
-                    { name: 'Phone bookings', key: 'phone', count: phoneCount, color: 'bg-blue-600', icon: <Phone className="w-4 h-4" /> },
-                    { name: 'Walk-ins', key: 'walk_in', count: walkInCount, color: 'bg-teal-600', icon: <Users className="w-4 h-4" /> },
-                    ...(adminCount > 0 ? [{ name: 'Other manual', key: 'admin', count: adminCount, color: 'bg-purple-600', icon: <User className="w-4 h-4" /> }] : [])
+                    { name: 'Online requests', key: 'online', count: onlineCount, color: 'bg-indigo-600', icon: <Laptop className="w-4 h-4" /> },
+                    { name: 'Phone requests', key: 'phone', count: phoneCount, color: 'bg-blue-600', icon: <Phone className="w-4 h-4" /> },
+                    { name: 'Walk-in requests', key: 'walk_in', count: walkInCount, color: 'bg-teal-600', icon: <Users className="w-4 h-4" /> },
+                    ...(adminCount > 0 ? [{ name: 'Other manual requests', key: 'admin', count: adminCount, color: 'bg-purple-600', icon: <User className="w-4 h-4" /> }] : [])
                   ].map(src => {
                     const pct = totalBookings > 0 ? (src.count / totalBookings) * 100 : 0
                     return (
@@ -999,26 +998,31 @@ export default function Analytics() {
                 </div>
 
                 {/* B) Main Scorecards */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                   <div className="border border-slate-200 bg-slate-50/50 p-5 rounded-2xl flex flex-col justify-between min-h-[100px]">
-                    <span className="text-[10px] font-black text-slate-505 text-slate-500 uppercase tracking-wider block">Estimated Revenue</span>
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Estimated Revenue</span>
                     <p className="text-2xl font-black text-slate-800 mt-2">{formatPrice(repEstimatedRevenue)}</p>
                     <span className="text-[9px] font-semibold text-slate-400 block mt-1">Confirmed & Completed</span>
                   </div>
                   <div className="border border-slate-200 bg-slate-50/50 p-5 rounded-2xl flex flex-col justify-between min-h-[100px]">
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Total Bookings</span>
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Requests Received</span>
                     <p className="text-2xl font-black text-slate-800 mt-2">{repTotalBookings}</p>
-                    <span className="text-[9px] font-semibold text-slate-400 block mt-1">All appointments logged</span>
+                    <span className="text-[9px] font-semibold text-slate-400 block mt-1">All requests logged</span>
                   </div>
                   <div className="border border-slate-200 bg-slate-50/50 p-5 rounded-2xl flex flex-col justify-between min-h-[100px]">
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Grooms Realized</span>
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Confirmed / Completed</span>
                     <p className="text-2xl font-black text-slate-800 mt-2">{repConfirmedCompleted}</p>
-                    <span className="text-[9px] font-semibold text-slate-400 block mt-1">Completed or Confirmed</span>
+                    <span className="text-[9px] font-semibold text-slate-400 block mt-1">Realized grooms</span>
                   </div>
                   <div className="border border-slate-200 bg-slate-50/50 p-5 rounded-2xl flex flex-col justify-between min-h-[100px]">
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Avg Booking Value</span>
-                    <p className="text-2xl font-black text-slate-800 mt-2">{formatPrice(repAvgValue)}</p>
-                    <span className="text-[9px] font-semibold text-slate-400 block mt-1">Per realized booking</span>
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Cancelled Requests</span>
+                    <p className="text-2xl font-black text-slate-800 mt-2">{repCancelled}</p>
+                    <span className="text-[9px] font-semibold text-slate-400 block mt-1">Cancelled or rejected</span>
+                  </div>
+                  <div className="border border-slate-200 bg-slate-50/50 p-5 rounded-2xl flex flex-col justify-between min-h-[100px]">
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Client No-Shows</span>
+                    <p className="text-2xl font-black text-slate-800 mt-2">{repNoShow}</p>
+                    <span className="text-[9px] font-semibold text-slate-400 block mt-1">Missed appointments</span>
                   </div>
                 </div>
 
@@ -1053,7 +1057,7 @@ export default function Analytics() {
                       {/* Online MoM Card */}
                       <div className="bg-white border border-slate-200 p-4 rounded-xl flex items-center justify-between">
                         <div>
-                          <span className="text-[9px] font-bold text-slate-400 uppercase block">Online Bookings</span>
+                          <span className="text-[9px] font-bold text-slate-400 uppercase block">Online Requests</span>
                           <span className="text-xs font-extrabold text-slate-800 mt-1 block">{onlineLabel}</span>
                         </div>
                         <div className={`w-2.5 h-2.5 rounded-full shrink-0 ml-2 ${onlineDiff !== 0 ? 'bg-indigo-500' : 'bg-slate-300'}`} />
@@ -1075,20 +1079,20 @@ export default function Analytics() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Left Side: Booking Source Mix */}
                   <div className="border border-slate-200 p-5 rounded-3xl space-y-4 bg-white">
-                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest block border-b border-slate-100 pb-2">Booking Source Mix</h4>
+                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest block border-b border-slate-100 pb-2">Requests by Source</h4>
                     <div className="space-y-4">
                       {[
-                        { name: 'Online bookings', count: repOnline, color: 'bg-indigo-500' },
-                        { name: 'Phone bookings', count: repPhone, color: 'bg-sky-500' },
-                        { name: 'Walk-ins', count: repWalkIn, color: 'bg-emerald-500' },
-                        ...(repAdmin > 0 ? [{ name: 'Other manual', count: repAdmin, color: 'bg-slate-400' }] : [])
+                        { name: 'Online requests', count: repOnline, color: 'bg-indigo-500' },
+                        { name: 'Phone requests', count: repPhone, color: 'bg-sky-500' },
+                        { name: 'Walk-in requests', count: repWalkIn, color: 'bg-emerald-500' },
+                        ...(repAdmin > 0 ? [{ name: 'Other manual requests', count: repAdmin, color: 'bg-slate-400' }] : [])
                       ].map(src => {
                         const pct = repTotalBookings > 0 ? (src.count / repTotalBookings) * 100 : 0
                         return (
                           <div key={src.name} className="space-y-1.5 text-xs font-semibold">
                             <div className="flex justify-between items-center text-slate-650">
                               <span>{src.name}</span>
-                              <span className="text-slate-800 font-bold">{src.count} bookings ({pct.toFixed(0)}%)</span>
+                              <span className="text-slate-800 font-bold">{src.count} requests ({pct.toFixed(0)}%)</span>
                             </div>
                             <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                               <div
