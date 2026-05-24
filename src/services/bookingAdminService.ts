@@ -20,12 +20,22 @@ export interface Booking {
     full_name: string
     phone: string
     email: string | null
+    surname: string | null
+    household_id?: string | null
+    household?: {
+      id: string
+      name: string
+      household_member_names: string[]
+    } | null
   } | null
   pet: {
+    id: string
     name: string
     breed: string | null
     size: string | null
     age_years: number | null
+    species: string
+    household_id?: string | null
   } | null
   service: {
     name: string
@@ -44,13 +54,23 @@ export async function fetchAdminBookings(businessId: string): Promise<Booking[]>
         created_at,
         full_name,
         phone,
-        email
+        email,
+        surname,
+        household_id,
+        household:households (
+          id,
+          name,
+          household_member_names
+        )
       ),
       pet:pets (
+        id,
         name,
         breed,
         size,
-        age_years
+        age_years,
+        species,
+        household_id
       ),
       service:services (
         name,
@@ -88,13 +108,23 @@ export async function updateBookingStatus(
         created_at,
         full_name,
         phone,
-        email
+        email,
+        surname,
+        household_id,
+        household:households (
+          id,
+          name,
+          household_member_names
+        )
       ),
       pet:pets (
+        id,
         name,
         breed,
         size,
-        age_years
+        age_years,
+        species,
+        household_id
       ),
       service:services (
         name,
@@ -125,13 +155,23 @@ export async function updateBookingAdminNotes(
         created_at,
         full_name,
         phone,
-        email
+        email,
+        surname,
+        household_id,
+        household:households (
+          id,
+          name,
+          household_member_names
+        )
       ),
       pet:pets (
+        id,
         name,
         breed,
         size,
-        age_years
+        age_years,
+        species,
+        household_id
       ),
       service:services (
         name,
@@ -159,13 +199,23 @@ export async function fetchAdminBookingsForRange(
         created_at,
         full_name,
         phone,
-        email
+        email,
+        surname,
+        household_id,
+        household:households (
+          id,
+          name,
+          household_member_names
+        )
       ),
       pet:pets (
+        id,
         name,
         breed,
         size,
-        age_years
+        age_years,
+        species,
+        household_id
       ),
       service:services (
         name,
@@ -215,4 +265,58 @@ export function aggregateBookings(bookings: Booking[]): BookingAnalyticsSummary 
     total_revenue_cents: 0
   } as BookingAnalyticsSummary)
 }
+
+export async function resolveBookingPet(bookingId: string, petId: string): Promise<void> {
+  const { data, error } = await supabase.rpc('resolve_booking_pet', {
+    p_booking_id: bookingId,
+    p_pet_id: petId
+  })
+  if (error) throw error
+  if (data && (data as any).success === false) {
+    throw new Error((data as any).error || 'Failed to resolve pet assignment.')
+  }
+}
+
+export async function createPetAndAssignToBooking(
+  bookingId: string,
+  details: {
+    name: string
+    species: string
+    breed?: string | null
+    size?: string | null
+    age_years?: number | null
+    notes?: string | null
+  }
+): Promise<string> {
+  const { data, error } = await supabase.rpc('create_pet_for_booking_and_assign', {
+    p_booking_id: bookingId,
+    p_name: details.name,
+    p_species: details.species,
+    p_breed: details.breed || null,
+    p_size: details.size || null,
+    p_age_years: details.age_years || null,
+    p_notes: details.notes || null
+  })
+  if (error) throw error
+  if (data && (data as any).success === false) {
+    throw new Error((data as any).error || 'Failed to create and assign pet.')
+  }
+  return (data as any).pet_id
+}
+
+export async function linkCustomerToHousehold(
+  customerId: string,
+  householdId: string
+): Promise<{ success: boolean; warning?: string }> {
+  const { data, error } = await supabase.rpc('link_customer_to_household', {
+    p_customer_id: customerId,
+    p_household_id: householdId
+  })
+  if (error) throw error
+  if (data && (data as any).success === false) {
+    throw new Error((data as any).error || 'Failed to link customer to household.')
+  }
+  return data as any
+}
+
 
