@@ -10,7 +10,6 @@ import {
   Dog,
   MessageCircle,
   RefreshCw,
-  LayoutGrid,
   Plus
 } from 'lucide-react'
 import {
@@ -308,13 +307,6 @@ export default function Schedule() {
             >
               <Plus className="w-4 h-4" />
               <span>Add Booking</span>
-            </button>
-            <button
-              onClick={() => navigate('/admin/bookings')}
-              className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 text-sm font-bold rounded-xl transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/20 flex items-center space-x-1.5"
-            >
-              <LayoutGrid className="w-4 h-4" />
-              <span>List View</span>
             </button>
           </div>
         }

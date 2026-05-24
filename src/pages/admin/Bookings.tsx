@@ -696,13 +696,6 @@ export default function Bookings() {
               <Plus className="w-4 h-4" />
               <span>Add Booking</span>
             </button>
-            <button
-              onClick={() => navigate('/admin/schedule')}
-              className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 text-sm font-bold rounded-xl transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/20 flex items-center space-x-1.5"
-            >
-              <Calendar className="w-4 h-4" />
-              <span>Calendar View</span>
-            </button>
           </div>
         }
       />
@@ -712,45 +705,59 @@ export default function Bookings() {
       {success && <AlertMessage type="success" message={success} />}
 
       {/* Control bar: Search & Date Filters */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end bg-slate-50/50 p-4 border border-slate-200/60 rounded-2xl">
         {/* Search */}
-        <div className="relative md:col-span-2">
-          <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-            <Search className="w-4 h-4" />
-          </span>
-          <input
-            type="text"
-            placeholder="Search by owner name, phone number, or pet name..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-800 text-sm bg-white"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors"
-            >
-              Clear
-            </button>
-          )}
+        <div className="md:col-span-2 space-y-1.5">
+          <label htmlFor="search-input" className="text-xs font-extrabold text-slate-450 uppercase tracking-wider block">
+            Search bookings
+          </label>
+          <div className="relative">
+            <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+              <Search className="w-4 h-4" />
+            </span>
+            <input
+              id="search-input"
+              type="text"
+              placeholder="Search by owner name, phone number, or pet name..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-800 text-sm bg-white"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-xs font-bold text-slate-400 hover:text-slate-650 transition-colors"
+              >
+                Clear
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Date Filter */}
-        <div className="flex space-x-2">
-          <input
-            type="date"
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
-            className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-800 text-sm bg-white"
-          />
-          {dateFilter && (
-            <button
-              onClick={() => setDateFilter('')}
-              className="px-3 border border-slate-200 hover:bg-slate-50 text-slate-500 rounded-xl text-xs font-bold transition-all cursor-pointer"
-            >
-              Reset
-            </button>
-          )}
+        <div className="space-y-1.5">
+          <div className="flex justify-between items-center">
+            <label htmlFor="date-filter-input" className="text-xs font-extrabold text-slate-450 uppercase tracking-wider">
+              Filter by appointment date
+            </label>
+            {dateFilter && (
+              <button
+                onClick={() => setDateFilter('')}
+                className="text-[10px] font-bold text-indigo-650 hover:text-indigo-750 transition-colors cursor-pointer"
+              >
+                Reset Filter
+              </button>
+            )}
+          </div>
+          <div className="relative flex">
+            <input
+              id="date-filter-input"
+              type="date"
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-800 text-sm bg-white cursor-pointer"
+            />
+          </div>
         </div>
       </div>
 
