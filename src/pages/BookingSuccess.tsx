@@ -45,11 +45,11 @@ export default function BookingSuccess() {
       </div>
 
       <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-3 font-sans">
-        Request Submitted!
+        Booking request sent
       </h1>
       
       <p className="text-slate-600 text-sm leading-relaxed mb-8 max-w-sm font-sans font-medium">
-        Your booking request has been received. The parlour will review your details and confirm the appointment shortly.
+        Thanks! We received your booking request. The parlour will confirm your appointment shortly.
       </p>
 
       {bookingDetails ? (
@@ -106,7 +106,7 @@ export default function BookingSuccess() {
             className="w-full inline-flex items-center justify-center px-6 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl transition-all shadow-sm hover:shadow-md gap-2 cursor-pointer duration-150 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
           >
             <MessageSquare className="w-4.5 h-4.5 fill-current" />
-            <span>Send WhatsApp Confirmation</span>
+            <span>Message Parlour on WhatsApp</span>
           </a>
         ) : (
           <div className="w-full py-3.5 px-4 bg-slate-100 text-slate-500 text-sm font-bold rounded-xl text-center border border-slate-200/50">

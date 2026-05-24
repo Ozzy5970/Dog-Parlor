@@ -49,7 +49,16 @@ export async function submitBookingRequest(input: BookingRequestInput): Promise<
     }
 
     // Cast response from RPC JSON payload
-    return data as BookingRequestResult
+    let result = data
+    if (typeof result === 'string') {
+      try {
+        result = JSON.parse(result)
+      } catch (e) {
+        // Fallback if parsing fails
+      }
+    }
+
+    return (result || { success: false, error: 'Empty response from booking service.' }) as BookingRequestResult
   } catch (err: any) {
     return { success: false, error: err.message || 'An unexpected error occurred.' }
   }

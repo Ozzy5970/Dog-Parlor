@@ -278,9 +278,9 @@ export default function Book() {
         })
       } else {
         // Map backend errors to clean user messages
-        let message = result.error || 'An unexpected error occurred.'
+        let message = 'An unexpected error occurred while processing your booking. Please try again or contact the parlour.'
         if (result.error === 'Slot already taken' || result.error === 'Slot is blocked') {
-          message = 'The selected time slot is no longer available. Please select another slot.'
+          message = 'Sorry, that time was just taken. Please choose another available time.'
           // Reload slots immediately
           loadSlots(selectedServiceId, selectedDate)
           // Kick user back to date selection step
@@ -291,11 +291,17 @@ export default function Book() {
           message = 'This slot is too close to the current time. Parlour requires more advance notice.'
         } else if (result.error === 'Booking too far ahead') {
           message = 'This date is beyond the parlour\'s advance booking horizon. Please choose an earlier date.'
+        } else if (result.error === 'Invalid service') {
+          message = 'The selected grooming service is invalid or inactive. Please select another service.'
+        } else if (result.error === 'Invalid business') {
+          message = 'The business details could not be resolved. Please reload the page.'
+        } else if (result.error === 'Invalid dog age') {
+          message = 'Dog age must be between 0 and 40.'
         }
         setSubmitError(message)
       }
     } catch (err: any) {
-      setSubmitError(err.message || 'Failed to submit booking request.')
+      setSubmitError('An unexpected connection error occurred. Please check your internet connection and try again.')
     } finally {
       setSubmitting(false)
     }
