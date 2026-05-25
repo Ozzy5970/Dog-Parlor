@@ -41,7 +41,6 @@ import {
   updateBookingAdminNotes,
   resolveBookingPet,
   createPetAndAssignToBooking,
-  linkCustomerToHousehold,
   type Booking
 } from '../../services/bookingAdminService'
 
@@ -213,8 +212,6 @@ export default function Bookings() {
 
   // Active pets cache state
   const [activePets, setActivePets] = useState<any[]>([])
-  const [possibleMatches, setPossibleMatches] = useState<Record<string, any[]>>({})
-  const [dismissedWarnings, setDismissedWarnings] = useState<Record<string, boolean>>({})
 
   // Pet Resolution Modal State
   const [resolvingBooking, setResolvingBooking] = useState<Booking | null>(null)
@@ -287,71 +284,7 @@ export default function Bookings() {
         setActivePets([])
       }
 
-      // Fetch potential matches for pending bookings
-      const pendingBookings = data.filter(b => b.status === 'pending')
-      const matchesMap: Record<string, any[]> = {}
-      for (const booking of pendingBookings) {
-        if (!booking.customer) continue
-        const matches: any[] = []
 
-        // 1. Same Surname Match
-        const surname = booking.customer.surname || booking.customer.full_name.split(' ').pop()
-        if (surname && surname.trim().length > 1) {
-          const { data: surnameCusts } = await supabase
-            .from('customers')
-            .select('id, full_name, phone, surname, household_id')
-            .eq('business_id', businessId)
-            .ilike('surname', surname.trim())
-            .neq('phone', booking.customer.phone)
-
-          if (surnameCusts) {
-            for (const c of surnameCusts) {
-              matches.push({
-                type: 'surname',
-                customer: c
-              })
-            }
-          }
-        }
-
-        // 2. Same Pet Name Match
-        if (booking.pet?.name) {
-          const { data: sameNamePets } = await supabase
-            .from('pets')
-            .select('id, name, customer_id, household_id, customer:customers(id, full_name, phone, surname, household_id)')
-            .eq('business_id', businessId)
-            .ilike('name', booking.pet.name.trim())
-            .neq('customer_id', booking.customer_id)
-            .eq('is_active', true)
-
-          if (sameNamePets) {
-            for (const p of sameNamePets) {
-              if (p.customer && (p.customer as any).phone !== booking.customer.phone) {
-                matches.push({
-                  type: 'pet_name',
-                  customer: p.customer,
-                  pet: { id: p.id, name: p.name }
-                })
-              }
-            }
-          }
-        }
-
-        // Deduplicate matches by customer ID
-        const uniqueMatches: any[] = []
-        const seenCustIds = new Set<string>()
-        for (const m of matches) {
-          if (!seenCustIds.has(m.customer.id)) {
-            seenCustIds.add(m.customer.id)
-            uniqueMatches.push(m)
-          }
-        }
-
-        if (uniqueMatches.length > 0) {
-          matchesMap[booking.id] = uniqueMatches
-        }
-      }
-      setPossibleMatches(matchesMap)
 
     } catch (err: any) {
       console.error('Error fetching bookings:', err)
@@ -852,61 +785,7 @@ export default function Bookings() {
                     </div>
                   )}
 
-                  {booking.status === 'pending' && possibleMatches[booking.id] && !dismissedWarnings[booking.id] && (
-                    <div className="mt-2.5 p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-2 text-xs">
-                      <div className="flex items-center space-x-1.5 text-amber-800 font-extrabold">
-                        <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                        <span>Possible same household or pet match</span>
-                      </div>
-                      <p className="text-amber-700 text-[11px] leading-snug">
-                        Another client profile shares similar details:
-                      </p>
-                      <div className="space-y-1.5 max-h-[150px] overflow-y-auto pr-1">
-                        {possibleMatches[booking.id].map(m => (
-                          <div key={m.customer.id} className="flex flex-col space-y-1 bg-white p-2 rounded-lg border border-amber-100">
-                            <span className="font-bold text-slate-800">
-                              {m.customer.full_name} ({m.customer.phone})
-                            </span>
-                            <span className="text-[10px] text-slate-500">
-                              Match: {m.type === 'surname' ? 'Same Surname' : `Same Pet (${m.pet.name})`}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={async () => {
-                                if (!profile?.business_id) return
-                                setActionLoading(booking.id)
-                                try {
-                                  const res = await linkCustomerToHousehold(booking.customer_id, m.customer.household_id)
-                                  if (res.warning) {
-                                    setSuccess(`Successfully linked to household! Note: ${res.warning}`)
-                                  } else {
-                                    setSuccess("Client successfully linked to household.")
-                                  }
-                                  await loadBookings(profile.business_id)
-                                } catch (err: any) {
-                                  console.error(err)
-                                  setError(err.message || 'Failed to link customer to household.')
-                                } finally {
-                                  setActionLoading(null)
-                                }
-                              }}
-                              disabled={actionLoading === booking.id}
-                              className="text-[10px] font-bold text-indigo-650 hover:text-indigo-800 hover:underline self-start bg-transparent border-none p-0 cursor-pointer disabled:opacity-50 mt-1"
-                            >
-                              Link to Household
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setDismissedWarnings(prev => ({ ...prev, [booking.id]: true }))}
-                        className="text-[10px] font-extrabold text-amber-700 hover:text-amber-900 block hover:underline pt-1 cursor-pointer bg-transparent border-none p-0"
-                      >
-                        Keep Separate
-                      </button>
-                    </div>
-                  )}
+
                 </div>
               </div>
 

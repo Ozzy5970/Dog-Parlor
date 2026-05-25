@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
+import { normalizeSaPhone } from '../../lib/phone'
 import {
   Search,
   User,
@@ -72,6 +73,7 @@ export default function Customers() {
 
   // Overlay forms modals states
   const [editingCustomer, setEditingCustomer] = useState<CustomerHistory | null>(null)
+  const [modalError, setModalError] = useState<string | null>(null)
   const [editingPet, setEditingPet] = useState<any | null>(null)
   const [addingPet, setAddingPet] = useState(false)
   const [linkingLoading, setLinkingLoading] = useState(false)
@@ -165,6 +167,7 @@ export default function Customers() {
   // Pre-populate forms
   useEffect(() => {
     if (editingCustomer) {
+      setModalError(null)
       setCustomerForm({
         full_name: editingCustomer.full_name || '',
         surname: editingCustomer.surname || '',
@@ -208,6 +211,7 @@ export default function Customers() {
     if (!bid || !editingCustomer) return
     try {
       setLinkingLoading(true)
+      setModalError(null)
       setError(null)
       setSuccessMsg(null)
       
@@ -227,7 +231,7 @@ export default function Customers() {
       await loadCustomers(bid, searchQuery)
     } catch (err: any) {
       console.error('Error updating customer profile:', err)
-      setError(err.message || 'Failed to update customer details.')
+      setModalError(err.message || 'Failed to update customer details.')
     } finally {
       setLinkingLoading(false)
     }
@@ -834,6 +838,8 @@ export default function Customers() {
               </button>
             </div>
             
+            {modalError && <AlertMessage type="error" message={modalError} />}
+            
             <form onSubmit={handleEditProfileSubmit} className="space-y-4 text-xs font-semibold max-h-[75vh] overflow-y-auto pr-1">
               
               {/* A. Bio Details */}
@@ -868,8 +874,13 @@ export default function Customers() {
                       required
                       value={customerForm.phone}
                       onChange={e => setCustomerForm(prev => ({ ...prev, phone: e.target.value }))}
-                      className="w-full p-2.5 border border-slate-200 bg-white rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-slate-800"
+                      className={`w-full p-2.5 border bg-white rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-slate-800 ${
+                        customerForm.phone && !normalizeSaPhone(customerForm.phone) ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' : 'border-slate-200'
+                      }`}
                     />
+                    {customerForm.phone && !normalizeSaPhone(customerForm.phone) && (
+                      <p className="text-red-650 text-[10px] mt-0.5 font-bold">Please enter a valid phone number (e.g. 082 123 4567)</p>
+                    )}
                   </div>
                   <div className="space-y-1">
                     <label className="text-[9px] font-bold text-slate-400 uppercase">Email Address</label>
@@ -1015,8 +1026,8 @@ export default function Customers() {
                 </button>
                 <button
                   type="submit"
-                  disabled={linkingLoading}
-                  className="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl flex items-center justify-center space-x-1.5 cursor-pointer shadow-xs"
+                  disabled={linkingLoading || (!!customerForm.phone && !normalizeSaPhone(customerForm.phone))}
+                  className="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl flex items-center justify-center space-x-1.5 cursor-pointer shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {linkingLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <span>Save Changes</span>}
                 </button>

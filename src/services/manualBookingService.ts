@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase'
+import { normalizeSaPhone } from '../lib/phone'
 
 export interface Customer {
   id: string
@@ -42,16 +43,20 @@ export async function findOrCreateCustomer(
   email?: string | null,
   surname?: string | null
 ): Promise<Customer> {
+  const normalizedPhone = normalizeSaPhone(phone)
+  if (!normalizedPhone) {
+    throw new Error('Please enter a valid phone number, e.g. 082 123 4567.')
+  }
   const cleanPhone = phone.trim()
   const cleanName = fullName.trim()
   const cleanEmail = email?.trim() || null
 
-  // 1. Search for customer
+  // 1. Search for customer by normalized_phone
   const { data: existingCustomer, error: findError } = await supabase
     .from('customers')
     .select('*')
     .eq('business_id', businessId)
-    .eq('phone', cleanPhone)
+    .eq('normalized_phone', normalizedPhone)
     .maybeSingle()
 
   if (findError) {
@@ -70,7 +75,8 @@ export async function findOrCreateCustomer(
       full_name: cleanName,
       phone: cleanPhone,
       email: cleanEmail,
-      surname: surname?.trim() || null
+      surname: surname?.trim() || null,
+      normalized_phone: normalizedPhone
     })
     .select('*')
     .single()

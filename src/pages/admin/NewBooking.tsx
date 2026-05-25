@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { normalizeSaPhone } from '../../lib/phone'
 import {
   Phone,
   Users,
@@ -179,7 +180,7 @@ export default function NewBooking() {
   // Step validations
   const isStep1Valid = !!selectedService
   const isStep2Valid = !!selectedDate && !!selectedSlot
-  const isStep3Valid = !!clientName.trim() && !!clientPhone.trim() && !!petName.trim() && (petAge === '' || (parseFloat(petAge) >= 0 && parseFloat(petAge) <= 40))
+  const isStep3Valid = !!clientName.trim() && !!normalizeSaPhone(clientPhone) && !!petName.trim() && (petAge === '' || (parseFloat(petAge) >= 0 && parseFloat(petAge) <= 40))
 
   // Load initial settings and services
   useEffect(() => {
@@ -674,8 +675,13 @@ export default function NewBooking() {
                     value={clientPhone}
                     onChange={(e) => setClientPhone(e.target.value)}
                     placeholder="e.g. 082 123 4567..."
-                    className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-800 text-sm bg-white"
+                    className={`w-full px-4 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-800 text-sm bg-white ${
+                      clientPhone && !normalizeSaPhone(clientPhone) ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' : 'border-slate-200'
+                    }`}
                   />
+                  {clientPhone && !normalizeSaPhone(clientPhone) && (
+                    <p className="text-red-650 text-[10px] mt-1 font-bold">Please enter a valid phone number (e.g. 082 123 4567)</p>
+                  )}
                 </FormField>
 
                 <FormField label="Email Address" optionalText="Optional">

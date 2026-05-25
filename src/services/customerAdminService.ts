@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase'
+import { normalizeSaPhone } from '../lib/phone'
 
 export interface CustomerHistory {
   id: string
@@ -8,6 +9,7 @@ export interface CustomerHistory {
   phone: string
   email: string | null
   household_id: string | null
+  normalized_phone: string
   created_at: string
   updated_at: string
   pets: Array<{
@@ -96,6 +98,26 @@ export async function updateCustomerProfile(
     household_member_names: string[]
   }
 ): Promise<void> {
+  // 1. Validate Phone Normalization
+  const normalizedPhone = normalizeSaPhone(customerUpdates.phone)
+  if (!normalizedPhone) {
+    throw new Error('Please enter a valid phone number, e.g. 082 123 4567.')
+  }
+
+  // Check if normalized phone is already linked to another customer in the same business
+  const { data: existing, error: existError } = await supabase
+    .from('customers')
+    .select('id')
+    .eq('business_id', businessId)
+    .eq('normalized_phone', normalizedPhone)
+    .neq('id', customerId)
+    .maybeSingle()
+
+  if (existError) throw existError
+  if (existing) {
+    throw new Error('That phone number is already linked to another customer profile.')
+  }
+
   // 1. Update customer profile
   const { error: custError } = await supabase
     .from('customers')
@@ -319,11 +341,25 @@ export async function searchCustomers(
   }
 
   // 1. Direct search on Customer fields (name, surname, phone)
+  const orConditions = [
+    `full_name.ilike.%${cleanSearch}%`,
+    `surname.ilike.%${cleanSearch}%`,
+    `phone.ilike.%${cleanSearch}%`
+  ]
+
+  const normalizedSearchPhone = normalizeSaPhone(cleanSearch)
+  if (normalizedSearchPhone) {
+    orConditions.push(
+      `normalized_phone.eq.${normalizedSearchPhone}`,
+      `normalized_phone.ilike.%${normalizedSearchPhone}%`
+    )
+  }
+
   const { data: directData, error: directErr } = await supabase
     .from('customers')
     .select(selectQuery)
     .eq('business_id', businessId)
-    .or(`full_name.ilike.%${cleanSearch}%,surname.ilike.%${cleanSearch}%,phone.ilike.%${cleanSearch}%`)
+    .or(orConditions.join(','))
 
   if (directErr) throw directErr
 

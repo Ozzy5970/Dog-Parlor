@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { normalizeSaPhone } from '../lib/phone'
 import { checkAvailability, type AvailableSlot } from '../services/availabilityService'
 import { submitBookingRequest } from '../services/bookingRequestService'
 import { utcToLocalTimeParts } from '../lib/dateTime'
@@ -645,8 +646,13 @@ export default function Book() {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="e.g., 082 123 4567"
-                    className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all bg-white text-sm text-slate-850 font-semibold"
+                    className={`w-full px-4 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all bg-white text-sm text-slate-850 font-semibold ${
+                      phone && !normalizeSaPhone(phone) ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' : 'border-slate-200'
+                    }`}
                   />
+                  {phone && !normalizeSaPhone(phone) && (
+                    <p className="text-red-650 text-[10px] mt-1 font-bold">Please enter a valid phone number (e.g. 082 123 4567)</p>
+                  )}
                 </FormField>
               <FormField label="Email Address" htmlFor="owner-email" optionalText="Optional">
                 <input
@@ -752,7 +758,7 @@ export default function Book() {
               </button>
               <button
                 type="submit"
-                disabled={!fullName.trim() || !phone.trim() || !petName.trim() || (petAge !== '' && (parseFloat(petAge) < 0 || parseFloat(petAge) > 40))}
+                disabled={!fullName.trim() || !normalizeSaPhone(phone) || !petName.trim() || (petAge !== '' && (parseFloat(petAge) < 0 || parseFloat(petAge) > 40))}
                 className="px-5 py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm cursor-pointer text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
               >
                 Review Booking
