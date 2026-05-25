@@ -5,7 +5,8 @@ import {
   Building2,
   Sliders,
   CalendarDays,
-  Save
+  Save,
+  Scale
 } from 'lucide-react'
 import { PageHeader, SectionCard, FormField, AlertMessage, LoadingState } from '../../components/UI'
 import {
@@ -63,6 +64,9 @@ export default function Settings() {
     slot_interval_minutes: 30,
     min_notice_hours: 2,
     max_advance_days: 60,
+    privacy_contact_text: '',
+    booking_policy_extra_notes: '',
+    terms_extra_notes: '',
   })
 
   const [openingHours, setOpeningHours] = useState<Omit<OpeningHour, 'business_id'>[]>([])
@@ -113,11 +117,20 @@ export default function Settings() {
     setBusiness((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleSettingsChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleSettingsChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target
     setSettings((prev) => ({
       ...prev,
-      [name]: name === 'timezone' || name === 'whatsapp_number' ? value : Number(value),
+      [name]:
+        name === 'timezone' ||
+        name === 'whatsapp_number' ||
+        name === 'privacy_contact_text' ||
+        name === 'booking_policy_extra_notes' ||
+        name === 'terms_extra_notes'
+          ? value
+          : Number(value),
     }))
   }
 
@@ -364,6 +377,56 @@ export default function Settings() {
           </div>
         </SectionCard>
 
+        {/* Section 1.5: Public Business & Legal Details */}
+        <SectionCard 
+          title="Public Business & Legal Details" 
+          icon={<Scale className="w-5 h-5" />}
+        >
+          <div className="space-y-6">
+            <FormField label="Privacy Policy Contact Note">
+              <textarea
+                name="privacy_contact_text"
+                value={settings.privacy_contact_text || ''}
+                onChange={handleSettingsChange}
+                placeholder="e.g., Requests can be submitted to our Information Officer during office hours."
+                rows={3}
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-800 text-sm"
+              />
+              <span className="text-[10px] text-slate-400 mt-1 block">
+                Additional plain-language contact guidelines or information officer details for POPIA/privacy inquiries.
+              </span>
+            </FormField>
+
+            <FormField label="Booking Policy Extra Notes (Optional)">
+              <textarea
+                name="booking_policy_extra_notes"
+                value={settings.booking_policy_extra_notes || ''}
+                onChange={handleSettingsChange}
+                placeholder="e.g., Please note that our parlor can only accommodate pets up to 40kg."
+                rows={3}
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-800 text-sm"
+              />
+              <span className="text-[10px] text-slate-400 mt-1 block">
+                Additional requirements or notes displayed at the bottom of the public Booking Policy page.
+              </span>
+            </FormField>
+
+            <FormField label="Terms of Service Extra Notes (Optional)">
+              <textarea
+                name="terms_extra_notes"
+                value={settings.terms_extra_notes || ''}
+                onChange={handleSettingsChange}
+                placeholder="e.g., These terms are subject to the jurisdiction of the Western Cape High Court."
+                rows={3}
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-800 text-sm"
+              />
+              <span className="text-[10px] text-slate-400 mt-1 block">
+                Extra legal details or rules displayed at the bottom of the public Terms page.
+              </span>
+            </FormField>
+          </div>
+        </SectionCard>
+
         {/* Section 2: Booking Rules */}
         <SectionCard 
           title="Booking Rules" 
@@ -396,7 +459,7 @@ export default function Settings() {
                   className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-800 text-sm"
                 />
                 <span className="text-[10px] text-slate-400 mt-1 block">
-                  Used for the customer WhatsApp button after online booking.
+                  Used for WhatsApp click-to-chat links. This can be your normal WhatsApp or WhatsApp Business number.
                 </span>
               </FormField>
 

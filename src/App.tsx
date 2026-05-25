@@ -5,6 +5,9 @@ import Layout from './components/Layout'
 import Home from './pages/Home'
 import Book from './pages/Book'
 import BookingSuccess from './pages/BookingSuccess'
+import Privacy from './pages/Privacy'
+import Terms from './pages/Terms'
+import BookingPolicy from './pages/BookingPolicy'
 import Login from './pages/admin/Login'
 import Dashboard from './pages/admin/Dashboard'
 import Settings from './pages/admin/Settings'
@@ -26,6 +29,10 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/book" element={<Book />} />
             <Route path="/booking-success" element={<BookingSuccess />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/booking-policy" element={<BookingPolicy />} />
+
 
             {/* Admin routes */}
             <Route path="/admin/login" element={<Login />} />

@@ -3,13 +3,27 @@
 
 @theme {
   --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  --spacing-13: 3.25rem;
+
+  /* Accent theme remapped to the logo crimson/red colors */
+  --color-indigo-50: #fff0f1;
+  --color-indigo-100: #ffe2e4;
+  --color-indigo-200: #ffc4c8;
+  --color-indigo-300: #ffa1a7;
+  --color-indigo-400: #ff6e77;
+  --color-indigo-500: #cf1f2e; /* Logo Red */
+  --color-indigo-600: #c21829; /* Primary Brand Red (accessible WCAG AA) */
+  --color-indigo-700: #a30f1c; /* Hover Brand Red (accessible WCAG AAA) */
+  --color-indigo-800: #75070c;
+  --color-indigo-900: #580206;
+  --color-indigo-950: #3b0002;
 }
 
 /* Custom focus styles for standard interactive elements to ensure high contrast and visibility */
 input:focus, select:focus, textarea:focus {
   outline: none;
   border-color: var(--color-indigo-500) !important;
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15) !important;
+  box-shadow: 0 0 0 2px rgba(194, 24, 41, 0.15) !important; /* Matches brand primary rgb */
 }
 
 @keyframes slideUp {

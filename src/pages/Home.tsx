@@ -1,12 +1,16 @@
 import { Link } from 'react-router-dom'
-import { Scissors, CalendarRange } from 'lucide-react'
+import { CalendarRange } from 'lucide-react'
 
 export default function Home() {
   return (
     <div className="text-center py-16 max-w-xl mx-auto flex flex-col items-center">
-      {/* Brand Icon Shell */}
-      <div className="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mb-6 shadow-xs border border-indigo-100/80">
-        <Scissors className="w-9 h-9 stroke-[2]" />
+      {/* Brand Logo Shell */}
+      <div className="mb-6 flex justify-center">
+        <img 
+          src="/logo.png" 
+          alt="Groomers" 
+          className="w-28 h-28 object-contain animate-fadeIn"
+        />
       </div>
 
       <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 mt-2 mb-4 leading-tight font-sans">

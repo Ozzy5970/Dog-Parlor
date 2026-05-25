@@ -655,10 +655,10 @@ export default function Dashboard() {
               {/* Analytics */}
               <Link
                 to="/admin/analytics"
-                className="p-3 bg-purple-50/40 hover:bg-purple-50 border border-purple-150/60 rounded-xl text-center transition-all cursor-pointer group flex flex-col items-center justify-center space-y-1.5"
+                className="p-3 bg-indigo-50/40 hover:bg-indigo-50 border border-indigo-100/60 rounded-xl text-center transition-all cursor-pointer group flex flex-col items-center justify-center space-y-1.5"
               >
-                <BarChart2 className="w-4 h-4 text-purple-600 group-hover:scale-110 transition-transform" />
-                <span className="text-xs font-extrabold text-slate-850 group-hover:text-purple-750">Analytics</span>
+                <BarChart2 className="w-4 h-4 text-indigo-600 group-hover:scale-110 transition-transform" />
+                <span className="text-xs font-extrabold text-slate-850 group-hover:text-indigo-700">Analytics</span>
               </Link>
 
               {/* Customers */}

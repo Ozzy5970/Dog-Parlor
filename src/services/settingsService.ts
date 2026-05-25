@@ -22,6 +22,9 @@ export interface BookingSettings {
   booking_approval_mode: string
   min_notice_hours: number
   max_advance_days: number
+  privacy_contact_text: string | null
+  booking_policy_extra_notes: string | null
+  terms_extra_notes: string | null
 }
 
 export interface OpeningHour {
@@ -89,9 +92,22 @@ export async function updateFullSettings(
   if (businessErr) throw businessErr
 
   // 2. Update booking settings
+  const sanitizedSettings = {
+    ...settings,
+  }
+  if (settings.privacy_contact_text !== undefined) {
+    sanitizedSettings.privacy_contact_text = settings.privacy_contact_text?.trim() || null
+  }
+  if (settings.booking_policy_extra_notes !== undefined) {
+    sanitizedSettings.booking_policy_extra_notes = settings.booking_policy_extra_notes?.trim() || null
+  }
+  if (settings.terms_extra_notes !== undefined) {
+    sanitizedSettings.terms_extra_notes = settings.terms_extra_notes?.trim() || null
+  }
+
   const { error: settingsErr } = await supabase
     .from('business_settings')
-    .update(settings)
+    .update(sanitizedSettings)
     .eq('business_id', businessId)
 
   if (settingsErr) throw settingsErr

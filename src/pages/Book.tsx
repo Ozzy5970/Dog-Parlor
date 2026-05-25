@@ -70,6 +70,7 @@ export default function Book() {
   // Submission state
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
+  const [consentAgreed, setConsentAgreed] = useState(false)
 
   // Helper: compute next likely valid bookable date starting from today
   const getNextValidBookableDateStr = (currentSettings?: BusinessSettings | null) => {
@@ -866,11 +867,32 @@ export default function Book() {
                 <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block border-b border-slate-100 pb-1.5 mb-2">
                   Customer Message / Special Instructions
                 </span>
-                <p className="text-slate-650 bg-slate-50/50 p-3 rounded-xl border border-slate-200/50 leading-relaxed font-semibold italic text-xs">
+                <p className="text-slate-655 bg-slate-50/50 p-3 rounded-xl border border-slate-200/50 leading-relaxed font-semibold italic text-xs">
                   "{customerNotes}"
                 </p>
               </div>
             )}
+          </div>
+
+          {/* Consent Checkbox */}
+          <div className="bg-slate-50 border border-slate-200/80 p-5 rounded-2xl space-y-3 text-xs font-semibold text-slate-650">
+            <label className="flex items-start gap-3 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={consentAgreed}
+                onChange={(e) => setConsentAgreed(e.target.checked)}
+                className="mt-0.5 h-4.5 w-4.5 rounded-lg border-slate-300 text-indigo-650 focus:ring-indigo-500 transition-all cursor-pointer accent-indigo-650 animate-fadeIn"
+              />
+              <span className="leading-relaxed">
+                I agree that the parlour may use my details to manage my booking and contact me about this appointment. <span className="text-red-500">*</span>
+              </span>
+            </label>
+            <p className="text-slate-405 pl-7.5 text-[11px] font-bold">
+              By submitting this booking request, you agree to the{' '}
+              <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">Privacy Policy</a>
+              {' '}and{' '}
+              <a href="/booking-policy" target="_blank" rel="noopener noreferrer" className="text-indigo-650 hover:underline">Booking Policy</a>.
+            </p>
           </div>
 
           <div className="flex justify-between pt-6 border-t border-slate-200/60">
@@ -884,7 +906,7 @@ export default function Book() {
             </button>
             <button
               type="button"
-              disabled={submitting}
+              disabled={submitting || !consentAgreed}
               onClick={handleSubmitBooking}
               className="px-6 py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md flex items-center gap-2 cursor-pointer text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
             >
