@@ -159,10 +159,20 @@ export interface AdminSubmitBookingInput {
   adminNotes?: string | null
   petAgeYears?: number | null
   surname?: string | null
+  // Optional customer profile details
+  addressLine1?: string | null
+  addressLine2?: string | null
+  suburb?: string | null
+  city?: string | null
+  province?: string | null
+  postalCode?: string | null
+  country?: string | null
+  extraNames?: string[]
 }
 
 /**
- * Submits a manual booking request atomically via the secure DB RPC.
+ * Submits a manual booking request atomically via the secure DB RPC,
+ * and updates optional customer address/household details if provided.
  */
 export async function adminSubmitBooking(
   input: AdminSubmitBookingInput
@@ -189,6 +199,60 @@ export async function adminSubmitBooking(
     throw error
   }
 
-  return data as { success: boolean; booking_id?: string; error?: string }
+  const result = data as { success: boolean; booking_id?: string; error?: string }
+
+  if (result.success && result.booking_id) {
+    const hasProfileDetails = 
+      input.addressLine1?.trim() || 
+      input.addressLine2?.trim() || 
+      input.suburb?.trim() || 
+      input.city?.trim() || 
+      input.province?.trim() || 
+      input.postalCode?.trim() || 
+      (input.extraNames && input.extraNames.length > 0)
+
+    if (hasProfileDetails) {
+      const { data: bookingObj, error: fetchErr } = await supabase
+        .from('bookings')
+        .select(`
+          business_id,
+          customer:customers (
+            household_id
+          )
+        `)
+        .eq('id', result.booking_id)
+        .single()
+
+      if (fetchErr) throw fetchErr
+
+      const householdId = (bookingObj as any)?.customer?.household_id
+      const businessId = (bookingObj as any)?.business_id
+
+      if (householdId && businessId) {
+        const cleanExtraNames = (input.extraNames || [])
+          .map(n => n.trim())
+          .filter(n => n !== '')
+
+        const { error: updateErr } = await supabase
+          .from('households')
+          .update({
+            address_line_1: input.addressLine1?.trim() || null,
+            address_line_2: input.addressLine2?.trim() || null,
+            suburb: input.suburb?.trim() || null,
+            city: input.city?.trim() || null,
+            province: input.province?.trim() || null,
+            postal_code: input.postalCode?.trim() || null,
+            country: input.country?.trim() || 'South Africa',
+            household_member_names: cleanExtraNames
+          })
+          .eq('id', householdId)
+          .eq('business_id', businessId)
+
+        if (updateErr) throw updateErr
+      }
+    }
+  }
+
+  return result
 }
 

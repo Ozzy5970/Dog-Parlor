@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
@@ -21,7 +21,10 @@ import {
   Edit3,
   Plus,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Volume2,
+  VolumeX,
+  Bell
 } from 'lucide-react'
 import { createWhatsAppLink, getPendingBookingMessage, getConfirmedBookingMessage, getCancelledBookingMessage } from '../../lib/whatsapp'
 import {
@@ -119,6 +122,44 @@ const sourceLabels: Record<string, string> = {
   admin: 'Other manual'
 }
 
+// Helper to synthesize a beautiful soft chime sound via Web Audio API
+const playChimeSound = () => {
+  try {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
+    if (!AudioContextClass) return
+    const ctx = new AudioContextClass()
+    const now = ctx.currentTime
+
+    // First note (E5, high-pitched, soft)
+    const osc1 = ctx.createOscillator()
+    const gain1 = ctx.createGain()
+    osc1.type = 'sine'
+    osc1.frequency.setValueAtTime(659.25, now) // E5
+    gain1.gain.setValueAtTime(0.08, now) // Low volume for softness
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35)
+    
+    osc1.connect(gain1)
+    gain1.connect(ctx.destination)
+    osc1.start(now)
+    osc1.stop(now + 0.35)
+
+    // Second note (A5, harmonizing, slightly delayed)
+    const osc2 = ctx.createOscillator()
+    const gain2 = ctx.createGain()
+    osc2.type = 'sine'
+    osc2.frequency.setValueAtTime(880.00, now + 0.12) // A5
+    gain2.gain.setValueAtTime(0.08, now + 0.12)
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.6)
+    
+    osc2.connect(gain2)
+    gain2.connect(ctx.destination)
+    osc2.start(now + 0.12)
+    osc2.stop(now + 0.6)
+  } catch (e) {
+    console.warn('Audio play failed silently:', e)
+  }
+}
+
 export default function Bookings() {
   const navigate = useNavigate()
   const { profile, loading: authLoading } = useAuth()
@@ -130,6 +171,17 @@ export default function Bookings() {
   const [success, setSuccess] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [businessName, setBusinessName] = useState('the Parlour')
+
+  // Sound Notification state
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(() => {
+    const stored = localStorage.getItem('admin_booking_sound_enabled')
+    return stored !== null ? stored === 'true' : true
+  })
+  const [showNewBookingToast, setShowNewBookingToast] = useState(false)
+  const [newBookingDetails, setNewBookingDetails] = useState<{ petName: string; customerName: string } | null>(null)
+  const [isInitialLoad, setIsInitialLoad] = useState(true)
+  
+  const seenPendingIdsRef = useRef<Set<string>>(new Set())
 
   useEffect(() => {
     if (profile?.business_id) {
@@ -206,9 +258,9 @@ export default function Bookings() {
   }
 
   // Fetch bookings data
-  const loadBookings = async (businessId: string) => {
+  const loadBookings = async (businessId: string, silent = false) => {
     try {
-      setLoading(true)
+      if (!silent) setLoading(true)
       const data = await fetchAdminBookings(businessId)
       setBookings(data)
 
@@ -404,6 +456,57 @@ export default function Bookings() {
 
     loadBookings(profile.business_id)
   }, [profile, authLoading])
+
+  // Toggle sound handler
+  const handleToggleSound = (enabled: boolean) => {
+    setSoundEnabled(enabled)
+    localStorage.setItem('admin_booking_sound_enabled', String(enabled))
+    if (enabled) {
+      playChimeSound()
+    }
+  }
+
+  // Polling for bookings every 30 seconds (silent refresh)
+  useEffect(() => {
+    if (authLoading || !profile?.business_id) return
+
+    const interval = setInterval(() => {
+      loadBookings(profile.business_id, true)
+    }, 30000)
+
+    return () => clearInterval(interval)
+  }, [profile, authLoading])
+
+  // Detect new pending online bookings to trigger alerts
+  useEffect(() => {
+    if (bookings.length === 0) return
+
+    const pendingOnlineBookings = bookings.filter(b => b.status === 'pending' && b.source === 'online')
+    const pendingOnlineIds = pendingOnlineBookings.map(b => b.id)
+
+    if (isInitialLoad) {
+      seenPendingIdsRef.current = new Set(pendingOnlineIds)
+      setIsInitialLoad(false)
+      return
+    }
+
+    const newPending = pendingOnlineBookings.filter(b => !seenPendingIdsRef.current.has(b.id))
+
+    if (newPending.length > 0) {
+      newPending.forEach(b => seenPendingIdsRef.current.add(b.id))
+
+      const latest = newPending[newPending.length - 1]
+      setNewBookingDetails({
+        petName: latest.pet?.name || 'Unnamed Pet',
+        customerName: latest.customer?.full_name || 'Anonymous'
+      })
+      setShowNewBookingToast(true)
+
+      if (soundEnabled) {
+        playChimeSound()
+      }
+    }
+  }, [bookings, isInitialLoad, soundEnabled])
 
   // Handle status update actions
   const handleStatusChange = async (bookingId: string, newStatus: Booking['status']) => {
@@ -1042,17 +1145,40 @@ export default function Bookings() {
         title="Manage Bookings"
         description="Review booking requests, track services, update status workflows, and communicate with clients."
         action={
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 flex-wrap sm:flex-nowrap gap-2 justify-end">
+            {/* Sound alert toggle control */}
+            <button
+              onClick={() => handleToggleSound(!soundEnabled)}
+              className={`p-2 border rounded-xl transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/20 flex items-center space-x-1.5 text-xs font-bold ${
+                soundEnabled
+                  ? 'border-indigo-150 bg-indigo-55 text-indigo-700 hover:bg-indigo-100/50'
+                  : 'border-slate-200 bg-white text-slate-450 hover:bg-slate-50 hover:text-slate-600'
+              }`}
+              title={soundEnabled ? "Disable sound alerts for new online requests" : "Enable sound alerts for new online requests"}
+            >
+              {soundEnabled ? (
+                <>
+                  <Volume2 className="w-4 h-4 shrink-0 text-indigo-600" />
+                  <span className="hidden sm:inline">Sound alerts: On</span>
+                </>
+              ) : (
+                <>
+                  <VolumeX className="w-4 h-4 shrink-0 text-slate-450" />
+                  <span className="hidden sm:inline">Sound alerts: Off</span>
+                </>
+              )}
+            </button>
+
             <button
               onClick={() => profile?.business_id && loadBookings(profile.business_id)}
-              className="p-2 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              className="p-2 border border-slate-200 hover:bg-slate-50 text-slate-655 rounded-xl transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
               title="Refresh bookings data"
             >
               <RefreshCw className="w-4 h-4" />
             </button>
             <button
               onClick={() => navigate('/admin/bookings/new')}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-xs transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/20 flex items-center space-x-1.5"
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-xs transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/20 flex items-center space-x-1.5 shrink-0"
             >
               <Plus className="w-4 h-4" />
               <span>Add Booking</span>
@@ -1503,6 +1629,47 @@ export default function Bookings() {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Toast Notification for new pending online bookings */}
+      {showNewBookingToast && newBookingDetails && (
+        <div className="fixed bottom-6 right-6 z-50 animate-slideUp max-w-sm w-full bg-white border border-indigo-150 rounded-2xl shadow-xl p-4 flex items-start space-x-3.5 border-l-4 border-l-indigo-600">
+          <div className="p-2 bg-indigo-50 text-indigo-700 rounded-xl shrink-0">
+            <Bell className="w-5 h-5 text-indigo-600 animate-bounce" />
+          </div>
+          <div className="flex-grow min-w-0">
+            <h4 className="font-extrabold text-slate-900 text-xs uppercase tracking-wide">
+              New Booking Request
+            </h4>
+            <p className="text-slate-650 text-xs font-semibold mt-1 leading-normal">
+              Online request received for <span className="font-bold text-slate-800">{newBookingDetails.petName}</span> ({newBookingDetails.customerName}).
+            </p>
+            <div className="flex items-center space-x-3 mt-3.5">
+              <button
+                onClick={() => {
+                  setShowNewBookingToast(false)
+                  setActiveTab('awaiting')
+                  setStatusFilter('all')
+                }}
+                className="text-xs font-black text-indigo-650 hover:text-indigo-800 transition-colors cursor-pointer bg-transparent border-none p-0"
+              >
+                View Request
+              </button>
+              <button
+                onClick={() => setShowNewBookingToast(false)}
+                className="text-xs font-bold text-slate-400 hover:text-slate-650 transition-colors cursor-pointer bg-transparent border-none p-0"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowNewBookingToast(false)}
+            className="text-slate-350 hover:text-slate-500 transition-colors cursor-pointer bg-transparent border-none p-0 shrink-0 self-start"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
     </div>

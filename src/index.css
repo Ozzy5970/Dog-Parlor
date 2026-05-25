@@ -11,3 +11,19 @@ input:focus, select:focus, textarea:focus {
   border-color: var(--color-indigo-500) !important;
   box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15) !important;
 }
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(1.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slideUp {
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
