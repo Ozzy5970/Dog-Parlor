@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Scale, Mail, Loader2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { DEFAULT_TERMS_OF_SERVICE } from '../lib/policyTemplates'
 
 export default function Terms() {
   const [loading, setLoading] = useState(true)
@@ -83,50 +84,7 @@ export default function Terms() {
       </div>
 
       <div className="prose prose-slate max-w-none text-sm leading-relaxed space-y-6 font-medium text-slate-600">
-        {termsOfServiceText ? (
-          <div className="whitespace-pre-wrap">{termsOfServiceText}</div>
-        ) : (
-          <>
-            <p>
-              Welcome to our appointment scheduling system. By accessing this platform or requesting a booking, you agree to comply with the terms and conditions outlined below.
-            </p>
-
-            <section className="space-y-2">
-              <h2 className="text-base font-bold text-slate-900 uppercase tracking-wide">1. Booking Status & Confirmations</h2>
-              <p>
-                Submitting a booking request online <strong>does not constitute a final or guaranteed appointment</strong>. All online bookings are treated as pending requests and are subject to availability and review. Your appointment is only finalized once you receive a confirmation notification (via WhatsApp, email, or telephone) from our parlour staff.
-              </p>
-            </section>
-
-            <section className="space-y-2">
-              <h2 className="text-base font-bold text-slate-900 uppercase tracking-wide">2. Customer Responsibilities</h2>
-              <p>
-                You agree to provide accurate and complete contact details (full name, email, and phone number) and pet context. Providing incorrect or inactive contact details may result in the automatic cancellation of your pending request.
-              </p>
-            </section>
-
-            <section className="space-y-2">
-              <h2 className="text-base font-bold text-slate-900 uppercase tracking-wide">3. Right to Cancel or Reschedule</h2>
-              <p>
-                The parlour reserves the right to cancel, decline, or request to reschedule appointments at any time due to scheduling conflicts, staff availability, emergency closures, or pet safety concerns.
-              </p>
-            </section>
-
-            <section className="space-y-2">
-              <h2 className="text-base font-bold text-slate-900 uppercase tracking-wide">4. App Availability & Warranties</h2>
-              <p>
-                This booking system is provided "as is" and "as available". We do not guarantee 100% uninterrupted availability of the application, scheduling interfaces, or notifications.
-              </p>
-            </section>
-
-            <section className="space-y-2">
-              <h2 className="text-base font-bold text-slate-900 uppercase tracking-wide">5. Limitation of Liability</h2>
-              <p>
-                To the maximum extent permitted by law, the parlour and its developers shall not be liable for any indirect, incidental, or consequential losses, booking inconveniences, or damages arising out of the use of this software platform.
-              </p>
-            </section>
-          </>
-        )}
+        <div className="whitespace-pre-wrap">{termsOfServiceText || DEFAULT_TERMS_OF_SERVICE}</div>
 
         <section className="space-y-2 bg-slate-50 border border-slate-200 p-5 rounded-xl text-slate-700">
           <h2 className="text-sm font-bold text-slate-900 flex items-center gap-1.5 mb-1.5">

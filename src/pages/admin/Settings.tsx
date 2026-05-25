@@ -16,6 +16,11 @@ import {
   type BookingSettings,
   type OpeningHour,
 } from '../../services/settingsService'
+import {
+  DEFAULT_PRIVACY_POLICY,
+  DEFAULT_TERMS_OF_SERVICE,
+  DEFAULT_BOOKING_POLICY,
+} from '../../lib/policyTemplates'
 
 const DAYS_OF_WEEK = [
   { value: 0, label: 'Sunday' },
@@ -90,7 +95,12 @@ export default function Settings() {
         const data = await fetchFullSettings(profile!.business_id)
 
         setBusiness(data.business)
-        setSettings(data.settings)
+        setSettings({
+          ...data.settings,
+          privacy_policy_text: data.settings.privacy_policy_text || DEFAULT_PRIVACY_POLICY,
+          terms_of_service_text: data.settings.terms_of_service_text || DEFAULT_TERMS_OF_SERVICE,
+          booking_policy_text: data.settings.booking_policy_text || DEFAULT_BOOKING_POLICY,
+        })
 
         // Initialize all 7 days, merging what we fetched
         const hours = DAYS_OF_WEEK.map((day) => {
@@ -389,6 +399,12 @@ export default function Settings() {
           icon={<Scale className="w-5 h-5" />}
         >
           <div className="space-y-6">
+            <div className="bg-slate-50 border border-slate-200/60 p-4 rounded-xl text-xs font-semibold text-slate-600 leading-relaxed">
+              These are shown to customers from the footer links. You can edit the default wording below before going live. 
+              Do not place private customer information or internal staff notes here. 
+              <strong> Edit the policies below, then click Save Settings at the bottom of the page.</strong>
+            </div>
+
             <FormField label="Privacy Policy">
               <textarea
                 name="privacy_policy_text"
@@ -398,9 +414,18 @@ export default function Settings() {
                 rows={8}
                 className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-800 text-sm font-sans"
               />
-              <span className="text-[10px] text-slate-400 mt-1 block">
-                Shown on /privacy. Customers see this from the website footer. Leave blank to use the standard default template.
-              </span>
+              <div className="flex items-center justify-between mt-1 flex-wrap gap-2">
+                <span className="text-[10px] text-slate-400 block">
+                  Shown on /privacy
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setSettings(prev => ({ ...prev, privacy_policy_text: DEFAULT_PRIVACY_POLICY }))}
+                  className="text-[10px] text-indigo-650 hover:text-indigo-700 font-bold transition-all cursor-pointer focus:outline-none focus:underline"
+                >
+                  Restore default template
+                </button>
+              </div>
             </FormField>
 
             <FormField label="Terms of Service">
@@ -412,9 +437,18 @@ export default function Settings() {
                 rows={8}
                 className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-800 text-sm font-sans"
               />
-              <span className="text-[10px] text-slate-400 mt-1 block">
-                Shown on /terms. Customers see this from the website footer. Leave blank to use the standard default template.
-              </span>
+              <div className="flex items-center justify-between mt-1 flex-wrap gap-2">
+                <span className="text-[10px] text-slate-400 block">
+                  Shown on /terms
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setSettings(prev => ({ ...prev, terms_of_service_text: DEFAULT_TERMS_OF_SERVICE }))}
+                  className="text-[10px] text-indigo-650 hover:text-indigo-700 font-bold transition-all cursor-pointer focus:outline-none focus:underline"
+                >
+                  Restore default template
+                </button>
+              </div>
             </FormField>
 
             <FormField label="Booking Policy">
@@ -426,9 +460,18 @@ export default function Settings() {
                 rows={8}
                 className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-800 text-sm font-sans"
               />
-              <span className="text-[10px] text-slate-400 mt-1 block">
-                Shown on /booking-policy. Customers see this from the website footer. Leave blank to use the standard default template.
-              </span>
+              <div className="flex items-center justify-between mt-1 flex-wrap gap-2">
+                <span className="text-[10px] text-slate-400 block">
+                  Shown on /booking-policy
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setSettings(prev => ({ ...prev, booking_policy_text: DEFAULT_BOOKING_POLICY }))}
+                  className="text-[10px] text-indigo-650 hover:text-indigo-700 font-bold transition-all cursor-pointer focus:outline-none focus:underline"
+                >
+                  Restore default template
+                </button>
+              </div>
             </FormField>
           </div>
         </SectionCard>

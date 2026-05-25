@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { FileText, Mail, Loader2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { DEFAULT_BOOKING_POLICY } from '../lib/policyTemplates'
 
 export default function BookingPolicy() {
   const [loading, setLoading] = useState(true)
@@ -83,57 +84,7 @@ export default function BookingPolicy() {
       </div>
 
       <div className="prose prose-slate max-w-none text-sm leading-relaxed space-y-6 font-medium text-slate-600">
-        {bookingPolicyText ? (
-          <div className="whitespace-pre-wrap">{bookingPolicyText}</div>
-        ) : (
-          <>
-            <p>
-              To ensure a smooth, stress-free grooming experience for all pets and owners, please review our booking policy rules before scheduling.
-            </p>
-
-            <section className="space-y-2">
-              <h2 className="text-base font-bold text-slate-900 uppercase tracking-wide">1. Requests & Confirmations</h2>
-              <p>
-                All online submissions are considered pending requests. A slot is not reserved until our staff reviews it against daily groom scheduling capacity and issues an explicit confirmation notification.
-              </p>
-            </section>
-
-            <section className="space-y-2">
-              <h2 className="text-base font-bold text-slate-900 uppercase tracking-wide">2. Cancellation & Rescheduling</h2>
-              <p>
-                We understand that schedules change. If you need to cancel or reschedule your appointment, please notify us as early as possible. This allows us to offer the slot to other clients on our waitlist.
-              </p>
-            </section>
-
-            <section className="space-y-2">
-              <h2 className="text-base font-bold text-slate-900 uppercase tracking-wide">3. No-Shows & Late Arrivals</h2>
-              <p>
-                Missed appointments without prior notification may be flagged as **No-Shows** in our records. Frequent no-shows may limit your ability to request future online appointments.
-              </p>
-              <p>
-                If you arrive late for your scheduled slot, we may be forced to truncate the service or reschedule your appointment to avoid delaying subsequent clients.
-              </p>
-            </section>
-
-            <section className="space-y-2">
-              <h2 className="text-base font-bold text-slate-900 uppercase tracking-wide">4. Pet Health & Safety Conditions</h2>
-              <p>
-                For the safety of all pets and staff:
-              </p>
-              <ul className="list-disc pl-5 space-y-1">
-                <li>You must inform parlour staff of any pre-existing health issues, skin allergies, injuries, or behavioral concerns (such as fear of dryers or history of biting).</li>
-                <li>We reserve the right to decline grooming sessions if a pet is deemed unfit, showing signs of contagious illness, or exhibits extreme aggression that poses a risk to safety.</li>
-              </ul>
-            </section>
-
-            <section className="space-y-2">
-              <h2 className="text-base font-bold text-slate-900 uppercase tracking-wide">5. Collection & Emergencies</h2>
-              <p>
-                Pets should be collected promptly after their grooming session is completed. In the event of a medical emergency during grooming, staff will immediately contact the emergency number provided in the booking details. Collection and medical expense responsibility remain with the pet owner.
-              </p>
-            </section>
-          </>
-        )}
+        <div className="whitespace-pre-wrap">{bookingPolicyText || DEFAULT_BOOKING_POLICY}</div>
 
         <section className="space-y-2 bg-slate-50 border border-slate-200 p-5 rounded-xl text-slate-700">
           <h2 className="text-sm font-bold text-slate-900 flex items-center gap-1.5 mb-1.5">
