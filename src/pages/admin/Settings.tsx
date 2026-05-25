@@ -67,6 +67,9 @@ export default function Settings() {
     privacy_contact_text: '',
     booking_policy_extra_notes: '',
     terms_extra_notes: '',
+    privacy_policy_text: '',
+    terms_of_service_text: '',
+    booking_policy_text: '',
   })
 
   const [openingHours, setOpeningHours] = useState<Omit<OpeningHour, 'business_id'>[]>([])
@@ -128,7 +131,10 @@ export default function Settings() {
         name === 'whatsapp_number' ||
         name === 'privacy_contact_text' ||
         name === 'booking_policy_extra_notes' ||
-        name === 'terms_extra_notes'
+        name === 'terms_extra_notes' ||
+        name === 'privacy_policy_text' ||
+        name === 'terms_of_service_text' ||
+        name === 'booking_policy_text'
           ? value
           : Number(value),
     }))
@@ -377,51 +383,51 @@ export default function Settings() {
           </div>
         </SectionCard>
 
-        {/* Section 1.5: Public Business & Legal Details */}
+        {/* Section 1.5: Public Website Policies */}
         <SectionCard 
-          title="Public Business & Legal Details" 
+          title="Public Website Policies" 
           icon={<Scale className="w-5 h-5" />}
         >
           <div className="space-y-6">
-            <FormField label="Privacy Policy Contact Note">
+            <FormField label="Privacy Policy">
               <textarea
-                name="privacy_contact_text"
-                value={settings.privacy_contact_text || ''}
+                name="privacy_policy_text"
+                value={settings.privacy_policy_text || ''}
                 onChange={handleSettingsChange}
-                placeholder="e.g., Requests can be submitted to our Information Officer during office hours."
-                rows={3}
-                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-800 text-sm"
+                placeholder="Paste or write your custom Privacy Policy here..."
+                rows={8}
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-800 text-sm font-sans"
               />
               <span className="text-[10px] text-slate-400 mt-1 block">
-                Additional plain-language contact guidelines or information officer details for POPIA/privacy inquiries.
+                Shown on /privacy. Customers see this from the website footer. Leave blank to use the standard default template.
               </span>
             </FormField>
 
-            <FormField label="Booking Policy Extra Notes (Optional)">
+            <FormField label="Terms of Service">
               <textarea
-                name="booking_policy_extra_notes"
-                value={settings.booking_policy_extra_notes || ''}
+                name="terms_of_service_text"
+                value={settings.terms_of_service_text || ''}
                 onChange={handleSettingsChange}
-                placeholder="e.g., Please note that our parlor can only accommodate pets up to 40kg."
-                rows={3}
-                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-800 text-sm"
+                placeholder="Paste or write your custom Terms of Service here..."
+                rows={8}
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-800 text-sm font-sans"
               />
               <span className="text-[10px] text-slate-400 mt-1 block">
-                Additional requirements or notes displayed at the bottom of the public Booking Policy page.
+                Shown on /terms. Customers see this from the website footer. Leave blank to use the standard default template.
               </span>
             </FormField>
 
-            <FormField label="Terms of Service Extra Notes (Optional)">
+            <FormField label="Booking Policy">
               <textarea
-                name="terms_extra_notes"
-                value={settings.terms_extra_notes || ''}
+                name="booking_policy_text"
+                value={settings.booking_policy_text || ''}
                 onChange={handleSettingsChange}
-                placeholder="e.g., These terms are subject to the jurisdiction of the Western Cape High Court."
-                rows={3}
-                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-800 text-sm"
+                placeholder="Paste or write your custom Booking Policy here..."
+                rows={8}
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-800 text-sm font-sans"
               />
               <span className="text-[10px] text-slate-400 mt-1 block">
-                Extra legal details or rules displayed at the bottom of the public Terms page.
+                Shown on /booking-policy. Customers see this from the website footer. Leave blank to use the standard default template.
               </span>
             </FormField>
           </div>

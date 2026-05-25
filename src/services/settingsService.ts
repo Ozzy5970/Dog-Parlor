@@ -25,6 +25,9 @@ export interface BookingSettings {
   privacy_contact_text: string | null
   booking_policy_extra_notes: string | null
   terms_extra_notes: string | null
+  privacy_policy_text: string | null
+  terms_of_service_text: string | null
+  booking_policy_text: string | null
 }
 
 export interface OpeningHour {
@@ -103,6 +106,15 @@ export async function updateFullSettings(
   }
   if (settings.terms_extra_notes !== undefined) {
     sanitizedSettings.terms_extra_notes = settings.terms_extra_notes?.trim() || null
+  }
+  if (settings.privacy_policy_text !== undefined) {
+    sanitizedSettings.privacy_policy_text = settings.privacy_policy_text?.trim() || null
+  }
+  if (settings.terms_of_service_text !== undefined) {
+    sanitizedSettings.terms_of_service_text = settings.terms_of_service_text?.trim() || null
+  }
+  if (settings.booking_policy_text !== undefined) {
+    sanitizedSettings.booking_policy_text = settings.booking_policy_text?.trim() || null
   }
 
   const { error: settingsErr } = await supabase
