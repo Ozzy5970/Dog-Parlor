@@ -414,7 +414,7 @@ export default function NewBooking() {
             </div>
             <span
               className={`text-xs font-bold ${
-                step === s.num ? 'text-indigo-600' : 'text-slate-500'
+                step === s.num ? 'text-indigo-600' : 'text-slate-700'
               }`}
             >
               {s.label}
@@ -572,7 +572,7 @@ export default function NewBooking() {
 
               {/* Time Slots Grid */}
               <div className="md:col-span-2 space-y-4">
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
                   Available Slots <span className="text-red-500">*</span>
                 </label>
 
@@ -964,7 +964,7 @@ export default function NewBooking() {
               {/* Service & Time details */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6">
                 <div className="space-y-2">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Service Details</span>
+                  <span className="text-[10px] font-black text-slate-700 uppercase tracking-wider block">Service Details</span>
                   <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-150/60 space-y-1">
                     <p className="font-extrabold text-slate-900 text-sm">{selectedService?.name}</p>
                     {selectedService?.dog_size && (
@@ -972,34 +972,34 @@ export default function NewBooking() {
                         {selectedService.dog_size} Dog
                       </span>
                     )}
-                    <p className="text-slate-500 text-xs font-semibold pt-1">Duration: {selectedService?.duration_minutes} minutes</p>
+                    <p className="text-slate-550 text-xs font-semibold pt-1">Duration: {selectedService?.duration_minutes} minutes</p>
                     <p className="text-indigo-600 font-black text-sm pt-2">Price: {selectedService ? formatPrice(selectedService.price_cents) : ''}</p>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Schedule Time</span>
+                  <span className="text-[10px] font-black text-slate-700 uppercase tracking-wider block">Schedule Time</span>
                   <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-150/60 space-y-2">
                     <div>
-                      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Selected Date</p>
+                      <p className="text-[11px] font-bold text-slate-700 uppercase tracking-wide">Selected Date</p>
                       <p className="font-extrabold text-slate-800 text-sm">{selectedDate}</p>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Start Time</p>
+                        <p className="text-[11px] font-bold text-slate-700 uppercase tracking-wide">Start Time</p>
                         <p className="font-extrabold text-indigo-600 text-sm">
                           {selectedSlot ? formatTime(selectedSlot.start_time) : ''}
                         </p>
                       </div>
                       <div>
-                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">End Time</p>
+                        <p className="text-[11px] font-bold text-slate-700 uppercase tracking-wide">End Time</p>
                         <p className="font-extrabold text-slate-700 text-sm">
                           {selectedSlot ? formatTime(selectedSlot.end_time) : ''}
                         </p>
                       </div>
                     </div>
                     <div>
-                      <p className="text-[10px] text-slate-400 font-semibold italic">Timezone: {settings.timezone}</p>
+                      <p className="text-[10px] text-slate-500 font-semibold italic">Timezone: {settings.timezone}</p>
                     </div>
                   </div>
                 </div>
@@ -1008,7 +1008,7 @@ export default function NewBooking() {
               {/* Client & Pet Details */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-6">
                 <div className="space-y-2">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Customer Details</span>
+                  <span className="text-[10px] font-black text-slate-700 uppercase tracking-wider block">Customer Details</span>
                   <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-150/60 space-y-1 text-xs">
                     <p className="font-bold text-slate-800">{clientName} {clientSurname}</p>
                     <p className="text-slate-600 font-semibold">Phone: {clientPhone}</p>
@@ -1016,18 +1016,18 @@ export default function NewBooking() {
                     
                     {addressLine1 && (
                       <div className="pt-2 border-t border-slate-200/60 mt-1.5 space-y-0.5 text-slate-500 font-semibold">
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Address</p>
+                        <p className="text-[9px] font-black text-slate-700 uppercase tracking-wider">Address</p>
                         <p className="text-slate-700 font-bold">{addressLine1}</p>
                         {addressLine2 && <p className="text-slate-700 font-bold">{addressLine2}</p>}
                         <p>{suburb && `${suburb}, `}{city}</p>
                         <p>{province && `${province}, `}{postalCode}</p>
-                        <p className="text-[10px] text-slate-400">{country}</p>
+                        <p className="text-[10px] text-slate-500">{country}</p>
                       </div>
                     )}
 
                     {extraNames.length > 0 && (
                       <div className="pt-2 border-t border-slate-200/60 mt-1.5 space-y-1 text-slate-500 font-semibold">
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Other names on profile</p>
+                        <p className="text-[9px] font-black text-slate-700 uppercase tracking-wider">Other names on profile</p>
                         <div className="flex flex-wrap gap-1 mt-1">
                           {extraNames.map((n, idx) => (
                             <span key={idx} className="px-1.5 py-0.5 bg-slate-100 border border-slate-200 text-slate-700 text-[10px] font-bold rounded-md">
@@ -1041,7 +1041,7 @@ export default function NewBooking() {
                 </div>
 
                 <div className="space-y-2">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Pet Details</span>
+                  <span className="text-[10px] font-black text-slate-700 uppercase tracking-wider block">Pet Details</span>
                   <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-150/60 space-y-1.5 text-xs">
                     <p className="font-bold text-slate-800">{petName}</p>
                     <div className="flex flex-wrap gap-1">
@@ -1071,20 +1071,20 @@ export default function NewBooking() {
               {/* Booking Source & Notes Segment */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 py-6 text-xs">
                 <div>
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Booking Source</span>
+                  <span className="text-[10px] font-black text-slate-700 uppercase tracking-wider block mb-1">Booking Source</span>
                   <span className="inline-block px-3 py-1 bg-indigo-50 border border-indigo-200 text-indigo-700 font-extrabold rounded-xl uppercase">
                     {sourceLabels[source] || source}
                   </span>
                 </div>
                 <div>
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Customer Notes</span>
-                  <p className="text-slate-600 bg-slate-50 rounded-xl p-3 border border-slate-100 italic min-h-[50px]">
+                  <span className="text-[10px] font-black text-slate-700 uppercase tracking-wider block mb-1">Customer Notes</span>
+                  <p className="text-slate-650 bg-slate-50 rounded-xl p-3 border border-slate-100 italic min-h-[50px]">
                     {customerNotes || 'No custom client notes.'}
                   </p>
                 </div>
                 <div>
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Internal Notes</span>
-                  <p className="text-slate-600 bg-slate-50 rounded-xl p-3 border border-slate-100 min-h-[50px]">
+                  <span className="text-[10px] font-black text-slate-700 uppercase tracking-wider block mb-1">Internal Notes</span>
+                  <p className="text-slate-650 bg-slate-50 rounded-xl p-3 border border-slate-100 min-h-[50px]">
                     {adminNotes || 'No internal notes.'}
                   </p>
                 </div>

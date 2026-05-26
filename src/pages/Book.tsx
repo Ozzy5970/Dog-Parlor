@@ -535,7 +535,7 @@ export default function Book() {
             </div>
 
             <div>
-              <span className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+              <span className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
                 Available Start Times
               </span>
               

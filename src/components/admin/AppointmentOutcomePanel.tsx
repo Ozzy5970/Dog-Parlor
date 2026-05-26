@@ -269,7 +269,7 @@ export default function AppointmentOutcomePanel({ businessId }: AppointmentOutco
                 <h4 className="font-extrabold text-slate-900 text-sm leading-tight capitalize">
                   {activeBooking.pet?.name}
                 </h4>
-                <p className="text-[11px] text-slate-500 font-semibold mt-0.5 capitalize">
+                <p className="text-[11px] text-slate-700 font-semibold mt-0.5 capitalize">
                   {activeBooking.pet?.size} Dog 
                   {activeBooking.pet?.breed ? ` • ${activeBooking.pet.breed}` : ''}
                 </p>
@@ -282,7 +282,7 @@ export default function AppointmentOutcomePanel({ businessId }: AppointmentOutco
                 <p className="font-bold text-slate-805 text-xs text-slate-800">
                   {activeBooking.customer?.full_name} {activeBooking.customer?.surname || ''}
                 </p>
-                <p className="text-[10px] text-slate-500 font-semibold">{activeBooking.customer?.phone}</p>
+                <p className="text-[10px] text-slate-700 font-semibold">{activeBooking.customer?.phone}</p>
               </div>
             </div>
 
@@ -292,7 +292,7 @@ export default function AppointmentOutcomePanel({ businessId }: AppointmentOutco
                 <p className="font-bold text-indigo-650 text-xs">
                   {activeBooking.service?.name}
                 </p>
-                <p className="text-[10px] text-slate-500 font-bold mt-0.5">
+                <p className="text-[10px] text-slate-700 font-bold mt-0.5">
                   Cost: {activeBooking.service ? formatPrice(activeBooking.service.price_cents) : ''}
                 </p>
               </div>
@@ -332,13 +332,22 @@ export default function AppointmentOutcomePanel({ businessId }: AppointmentOutco
             </button>
           </div>
 
-          <button
-            onClick={openBookingOnList}
-            className="w-full py-2 border border-slate-250 hover:bg-slate-50 text-slate-650 text-xs font-bold rounded-xl transition-colors flex items-center justify-center space-x-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-          >
-            <ExternalLink className="w-3.5 h-3.5" />
-            <span>Open booking</span>
-          </button>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={openBookingOnList}
+              className="flex-1 py-2 border border-slate-250 hover:bg-slate-50 text-slate-650 text-xs font-bold rounded-xl transition-colors flex items-center justify-center space-x-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              <span>Open booking</span>
+            </button>
+            <button
+              onClick={() => handleMinimize(true)}
+              className="flex-1 py-2 border border-slate-250 hover:bg-slate-50 text-slate-650 text-xs font-bold rounded-xl transition-colors flex items-center justify-center space-x-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+            >
+              <Minus className="w-3.5 h-3.5" />
+              <span>Minimize</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

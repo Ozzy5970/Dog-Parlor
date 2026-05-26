@@ -145,7 +145,7 @@ export function FormField({ label, htmlFor, required, error, children, optionalT
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <label htmlFor={htmlFor} className="block text-xs font-bold uppercase tracking-wider text-slate-500">
+        <label htmlFor={htmlFor} className="block text-xs font-bold uppercase tracking-wider text-slate-700">
           {label} {required && <span className="text-red-500">*</span>}
           {optionalText && <span className="text-slate-400 font-normal normal-case">({optionalText})</span>}
         </label>

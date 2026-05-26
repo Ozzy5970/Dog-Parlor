@@ -761,7 +761,7 @@ export default function Bookings() {
               <div className="bg-slate-50/50 rounded-xl p-4 border border-slate-100 space-y-2.5">
                 <div className="flex items-center space-x-2 border-b border-slate-200/50 pb-1.5">
                   <User className="w-4 h-4 text-slate-400" />
-                  <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">
+                  <span className="text-xs font-extrabold text-slate-700 uppercase tracking-wider">
                     Client Information
                   </span>
                 </div>
@@ -793,7 +793,7 @@ export default function Bookings() {
               <div className="bg-slate-50/50 rounded-xl p-4 border border-slate-100 space-y-2.5">
                 <div className="flex items-center space-x-2 border-b border-slate-200/50 pb-1.5">
                   <Dog className="w-4 h-4 text-slate-400" />
-                  <span className="text-xs font-extrabold text-slate-505 text-slate-500 uppercase tracking-wider">
+                  <span className="text-xs font-extrabold text-slate-700 uppercase tracking-wider">
                     Pet Details
                   </span>
                 </div>
@@ -957,7 +957,7 @@ export default function Bookings() {
           <div className="mt-6 pt-5 border-t border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-6 text-xs leading-relaxed font-medium">
             {/* Customer Notes */}
             <div className="space-y-1.5">
-              <span className="font-extrabold text-slate-400 uppercase tracking-wider block">
+              <span className="font-extrabold text-slate-700 uppercase tracking-wider block">
                 Customer Requests & Notes
               </span>
               <p className="text-slate-650 bg-slate-50 rounded-xl p-3 border border-slate-100 min-h-[50px] italic">
@@ -968,7 +968,7 @@ export default function Bookings() {
             {/* Admin Notes Editor */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <span className="font-extrabold text-slate-400 uppercase tracking-wider">
+                <span className="font-extrabold text-slate-700 uppercase tracking-wider">
                   Internal Admin Notes
                 </span>
                 {editingNotesId !== booking.id && (
@@ -1082,7 +1082,7 @@ export default function Bookings() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end bg-slate-50/50 p-4 border border-slate-200/60 rounded-2xl">
         {/* Search */}
         <div className="md:col-span-2 space-y-1.5">
-          <label htmlFor="search-input" className="text-xs font-extrabold text-slate-450 uppercase tracking-wider block">
+          <label htmlFor="search-input" className="text-xs font-extrabold text-slate-700 uppercase tracking-wider block">
             Search bookings
           </label>
           <div className="relative">
@@ -1111,7 +1111,7 @@ export default function Bookings() {
         {/* Date Filter */}
         <div className="space-y-1.5">
           <div className="flex justify-between items-center">
-            <label htmlFor="date-filter-input" className="text-xs font-extrabold text-slate-450 uppercase tracking-wider">
+            <label htmlFor="date-filter-input" className="text-xs font-extrabold text-slate-700 uppercase tracking-wider">
               Filter by appointment date
             </label>
             {dateFilter && (
@@ -1236,7 +1236,7 @@ export default function Bookings() {
             {/* 1. Group A: Awaiting Confirmation */}
             {(activeTab === 'all' || activeTab === 'awaiting') && (statusFilter === 'all' || statusFilter === 'pending') && (
               <div className="space-y-4">
-                <h2 className="text-sm font-extrabold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                <h2 className="text-sm font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
                   Awaiting Confirmation ({displayedAwaiting.length})
                 </h2>
@@ -1253,8 +1253,8 @@ export default function Bookings() {
             {/* 2. Group B: Upcoming Confirmed */}
             {(activeTab === 'all' || activeTab === 'upcoming') && (statusFilter === 'all' || statusFilter === 'confirmed') && (
               <div className="space-y-4 pt-2">
-                <h2 className="text-sm font-extrabold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-indigo-650"></span>
+                <h2 className="text-sm font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-indigo-655 bg-indigo-600"></span>
                   Upcoming Confirmed ({displayedUpcoming.length})
                 </h2>
                 {displayedUpcoming.length === 0 ? (
@@ -1270,7 +1270,7 @@ export default function Bookings() {
             {/* 3. Group C: History / Past & Closed */}
             {(activeTab === 'all' || activeTab === 'history') && (statusFilter === 'all' || ['completed', 'cancelled', 'no_show', 'confirmed'].includes(statusFilter)) && (
               <div className="space-y-4 pt-2">
-                <h2 className="text-sm font-extrabold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                <h2 className="text-sm font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-slate-400"></span>
                   History / Past & Closed ({displayedHistory.length})
                 </h2>
@@ -1351,7 +1351,7 @@ export default function Bookings() {
               <div className="space-y-4">
                 {/* Alternative Active Pets in Household */}
                 <div className="space-y-2">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block">
                     Active Household Pets
                   </span>
                   {(() => {
@@ -1420,13 +1420,13 @@ export default function Bookings() {
             ) : (
               /* Create New Pet Form */
               <div className="space-y-4 animate-fadeIn">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block">
                   New Pet Profile Details
                 </span>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1 text-xs">
-                    <label className="font-bold text-slate-500">Name *</label>
+                    <label className="font-bold text-slate-700">Name *</label>
                     <input
                       type="text"
                       value={newPetName}
@@ -1436,7 +1436,7 @@ export default function Bookings() {
                     />
                   </div>
                   <div className="space-y-1 text-xs">
-                    <label className="font-bold text-slate-500">Species *</label>
+                    <label className="font-bold text-slate-700">Species *</label>
                     <select
                       value={newPetSpecies}
                       onChange={e => setNewPetSpecies(e.target.value)}
@@ -1448,7 +1448,7 @@ export default function Bookings() {
                     </select>
                   </div>
                   <div className="space-y-1 text-xs">
-                    <label className="font-bold text-slate-500">Breed</label>
+                    <label className="font-bold text-slate-700">Breed</label>
                     <input
                       type="text"
                       value={newPetBreed}
@@ -1458,7 +1458,7 @@ export default function Bookings() {
                     />
                   </div>
                   <div className="space-y-1 text-xs">
-                    <label className="font-bold text-slate-500">Size</label>
+                    <label className="font-bold text-slate-700">Size</label>
                     <select
                       value={newPetSize}
                       onChange={e => setNewPetSize(e.target.value)}
@@ -1472,7 +1472,7 @@ export default function Bookings() {
                     </select>
                   </div>
                   <div className="space-y-1 text-xs col-span-2">
-                    <label className="font-bold text-slate-500">Age (Years)</label>
+                    <label className="font-bold text-slate-700">Age (Years)</label>
                     <input
                       type="number"
                       step="0.1"
@@ -1485,7 +1485,7 @@ export default function Bookings() {
                     />
                   </div>
                   <div className="space-y-1 text-xs col-span-2">
-                    <label className="font-bold text-slate-500">Grooming / Temperament Notes</label>
+                    <label className="font-bold text-slate-700">Grooming / Temperament Notes</label>
                     <textarea
                       value={newPetNotes}
                       onChange={e => setNewPetNotes(e.target.value)}

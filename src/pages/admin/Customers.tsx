@@ -724,19 +724,19 @@ export default function Customers() {
                         
                         <div className="space-y-3">
                           <div className="flex justify-between items-center text-xs">
-                            <span className="text-slate-500 font-semibold">Total Bookings:</span>
+                            <span className="text-slate-700 font-semibold">Total Bookings:</span>
                             <span className="font-black text-slate-900 bg-slate-100 px-2 py-0.5 rounded-md">{stats.total}</span>
                           </div>
                           <div className="flex justify-between items-center text-xs">
-                            <span className="text-slate-500 font-semibold">Completed:</span>
+                            <span className="text-slate-700 font-semibold">Completed:</span>
                             <span className="font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">{stats.completedCount}</span>
                           </div>
                           <div className="flex justify-between items-center text-xs">
-                            <span className="text-slate-500 font-semibold">Upcoming Scheduled:</span>
+                            <span className="text-slate-700 font-semibold">Upcoming Scheduled:</span>
                             <span className="font-black text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md">{stats.upcomingCount}</span>
                           </div>
                           <div className="flex justify-between items-center text-xs pt-2 border-t border-slate-100">
-                            <span className="text-slate-500 font-semibold">Most Demanded:</span>
+                            <span className="text-slate-700 font-semibold">Most Demanded:</span>
                             <span className="font-bold text-slate-800 text-right max-w-[120px] truncate" title={stats.mostPopularService}>
                               {stats.mostPopularService}
                             </span>
@@ -847,7 +847,7 @@ export default function Customers() {
                 <span className="text-[10px] font-black text-indigo-650 uppercase tracking-wider block border-b border-slate-100 pb-1">Personal Details</span>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase">First Name</label>
+                    <label className="text-[9px] font-bold text-slate-700 uppercase">First Name</label>
                     <input
                       type="text"
                       required
@@ -857,7 +857,7 @@ export default function Customers() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase">Surname</label>
+                    <label className="text-[9px] font-bold text-slate-700 uppercase">Surname</label>
                     <input
                       type="text"
                       value={customerForm.surname}
@@ -868,7 +868,7 @@ export default function Customers() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase">Phone Number</label>
+                    <label className="text-[9px] font-bold text-slate-700 uppercase">Phone Number</label>
                     <input
                       type="text"
                       required
@@ -879,11 +879,11 @@ export default function Customers() {
                       }`}
                     />
                     {customerForm.phone && !normalizeSaPhone(customerForm.phone) && (
-                      <p className="text-red-650 text-[10px] mt-0.5 font-bold">Please enter a valid phone number (e.g. 082 123 4567)</p>
+                      <p className="text-red-655 text-[10px] mt-0.5 font-bold">Please enter a valid phone number (e.g. 082 123 4567)</p>
                     )}
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase">Email Address</label>
+                    <label className="text-[9px] font-bold text-slate-700 uppercase">Email Address</label>
                     <input
                       type="email"
                       value={customerForm.email}
@@ -898,7 +898,7 @@ export default function Customers() {
               <div className="space-y-2.5 pt-2">
                 <span className="text-[10px] font-black text-indigo-655 uppercase tracking-wider block border-b border-slate-100 pb-1">Address Details</span>
                 <div className="space-y-1.5">
-                  <label className="text-[9px] font-bold text-slate-400 uppercase">Address Line 1</label>
+                  <label className="text-[9px] font-bold text-slate-700 uppercase">Address Line 1</label>
                   <input
                     type="text"
                     value={addressForm.address_line_1}
@@ -908,7 +908,7 @@ export default function Customers() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[9px] font-bold text-slate-400 uppercase">Address Line 2 (Optional)</label>
+                  <label className="text-[9px] font-bold text-slate-700 uppercase">Address Line 2 (Optional)</label>
                   <input
                     type="text"
                     value={addressForm.address_line_2}
@@ -919,7 +919,7 @@ export default function Customers() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase">Suburb</label>
+                    <label className="text-[9px] font-bold text-slate-700 uppercase">Suburb</label>
                     <input
                       type="text"
                       value={addressForm.suburb}
@@ -928,7 +928,7 @@ export default function Customers() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase">City</label>
+                    <label className="text-[9px] font-bold text-slate-700 uppercase">City</label>
                     <input
                       type="text"
                       value={addressForm.city}
@@ -939,7 +939,7 @@ export default function Customers() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase">Province</label>
+                    <label className="text-[9px] font-bold text-slate-700 uppercase">Province</label>
                     <input
                       type="text"
                       value={addressForm.province}
@@ -948,7 +948,7 @@ export default function Customers() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase">Postal Code</label>
+                    <label className="text-[9px] font-bold text-slate-700 uppercase">Postal Code</label>
                     <input
                       type="text"
                       value={addressForm.postal_code}
@@ -958,7 +958,7 @@ export default function Customers() {
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-slate-400 uppercase">Country</label>
+                  <label className="text-[9px] font-bold text-slate-700 uppercase">Country</label>
                   <input
                     type="text"
                     required
@@ -1055,7 +1055,7 @@ export default function Customers() {
             <form onSubmit={handleAddPetSubmit} className="space-y-4 text-xs font-semibold">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-slate-400 uppercase">Pet Name *</label>
+                  <label className="text-[9px] font-bold text-slate-700 uppercase">Pet Name *</label>
                   <input
                     type="text"
                     required
@@ -1066,7 +1066,7 @@ export default function Customers() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-slate-400 uppercase">Species *</label>
+                  <label className="text-[9px] font-bold text-slate-700 uppercase">Species *</label>
                   <select
                     value={petForm.species}
                     onChange={e => setPetForm(prev => ({ ...prev, species: e.target.value }))}
@@ -1080,7 +1080,7 @@ export default function Customers() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-slate-400 uppercase">Breed</label>
+                  <label className="text-[9px] font-bold text-slate-700 uppercase">Breed</label>
                   <input
                     type="text"
                     value={petForm.breed}
@@ -1090,7 +1090,7 @@ export default function Customers() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-slate-400 uppercase">Size</label>
+                  <label className="text-[9px] font-bold text-slate-700 uppercase">Size</label>
                   <select
                     value={petForm.size}
                     onChange={e => setPetForm(prev => ({ ...prev, size: e.target.value }))}
@@ -1104,7 +1104,7 @@ export default function Customers() {
                 </div>
               </div>
               <div className="space-y-1">
-                <label className="text-[9px] font-bold text-slate-400 uppercase">Age (Years)</label>
+                <label className="text-[9px] font-bold text-slate-700 uppercase">Age (Years)</label>
                 <input
                   type="number"
                   min="0"
@@ -1115,7 +1115,7 @@ export default function Customers() {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-[9px] font-bold text-slate-400 uppercase">Grooming & Temperament Notes</label>
+                <label className="text-[9px] font-bold text-slate-700 uppercase">Grooming & Temperament Notes</label>
                 <textarea
                   value={petForm.notes}
                   onChange={e => setPetForm(prev => ({ ...prev, notes: e.target.value }))}

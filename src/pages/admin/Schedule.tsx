@@ -338,7 +338,7 @@ export default function Schedule() {
                 <h2 className="text-lg font-black text-slate-800 tracking-tight">
                   {currentMonthLabel}
                 </h2>
-                <label className="flex items-center space-x-2 text-xs font-semibold text-slate-500 cursor-pointer select-none">
+                <label className="flex items-center space-x-2 text-xs font-semibold text-slate-700 cursor-pointer select-none">
                   <input
                     type="checkbox"
                     checked={showClosed}
@@ -373,7 +373,7 @@ export default function Schedule() {
             </div>
 
             {/* Weekdays Header */}
-            <div className="grid grid-cols-7 gap-1 text-center font-bold text-slate-400 text-xs uppercase tracking-wider mb-2">
+            <div className="grid grid-cols-7 gap-1 text-center font-bold text-slate-700 text-xs uppercase tracking-wider mb-2">
               <div>Sun</div>
               <div>Mon</div>
               <div>Tue</div>
