@@ -161,9 +161,15 @@ export default function Layout({ children }: LayoutProps) {
       <main className={`flex-grow w-full mx-auto px-4 transition-all duration-200 ${
         isAdmin 
           ? 'max-w-6xl py-8' 
-          : 'max-w-4xl pt-8 pb-16 sm:pt-12 sm:pb-20'
+          : location.pathname === '/'
+            ? 'max-w-5xl py-6 md:py-10'
+            : 'max-w-4xl pt-8 pb-16 sm:pt-12 sm:pb-20'
       }`}>
         {isAdmin ? (
+          <div className="min-h-[500px]">
+            {children}
+          </div>
+        ) : location.pathname === '/' ? (
           <div className="min-h-[500px]">
             {children}
           </div>

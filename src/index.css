@@ -41,3 +41,19 @@ input:focus, select:focus, textarea:focus {
   animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+@keyframes float {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-10px) scale(1.03); }
+}
+.animate-float {
+  animation: float 8s ease-in-out infinite;
+}
+
+@keyframes float-delayed {
+  0%, 100% { transform: translateY(-5px) scale(1.02); }
+  50% { transform: translateY(5px) scale(1.00); }
+}
+.animate-float-delayed {
+  animation: float-delayed 10s ease-in-out infinite;
+}
+
