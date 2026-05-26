@@ -31,13 +31,15 @@ export default function AppointmentOutcomePanel({ businessId }: AppointmentOutco
   })
   const [error, setError] = useState<string | null>(null)
   
-  // Track last seen count of due bookings to auto-expand on new items
-  const [prevCount, setPrevCount] = useState(0)
+  // Track last seen count of fresh due bookings to auto-expand on new items
+  const [prevFreshCount, setPrevFreshCount] = useState(0)
+  const [hasInitialized, setHasInitialized] = useState(false)
 
   // Fetch due bookings: confirmed and start_time <= now
   const fetchDueBookings = async () => {
     try {
-      const nowStr = new Date().toISOString()
+      const now = new Date()
+      const nowStr = now.toISOString()
       
       const { data, error: err } = await supabase
         .from('bookings')
@@ -72,12 +74,30 @@ export default function AppointmentOutcomePanel({ businessId }: AppointmentOutco
       const bookings = (data || []) as any as Booking[]
       setDueBookings(bookings)
       
-      // Auto-expand the panel if the count of due bookings increases (meaning a new due booking arrived)
-      if (bookings.length > prevCount) {
-        setIsMinimized(false)
-        localStorage.setItem('arrival_panel_minimized', 'false')
+      // Calculate fresh bookings (start_time within the last 60 minutes)
+      const STALE_THRESHOLD_MINUTES = 60
+      const thresholdTime = new Date(now.getTime() - STALE_THRESHOLD_MINUTES * 60 * 1000)
+      const freshBookings = bookings.filter(b => new Date(b.start_time) >= thresholdTime)
+
+      if (!hasInitialized) {
+        // On initial load, only open the modal if there are fresh due bookings
+        // and user hasn't explicitly minimized it. If there are only stale, keep it minimized.
+        if (freshBookings.length > 0) {
+          const minimizedPref = localStorage.getItem('arrival_panel_minimized') === 'true'
+          setIsMinimized(minimizedPref)
+        } else {
+          setIsMinimized(true)
+        }
+        setHasInitialized(true)
+      } else {
+        // On subsequent polls, auto-expand the panel only when a new fresh due booking arrives
+        if (freshBookings.length > prevFreshCount) {
+          setIsMinimized(false)
+          localStorage.setItem('arrival_panel_minimized', 'false')
+        }
       }
-      setPrevCount(bookings.length)
+      
+      setPrevFreshCount(freshBookings.length)
 
       // Keep current index in bounds
       if (currentIndex >= bookings.length && bookings.length > 0) {
@@ -96,7 +116,7 @@ export default function AppointmentOutcomePanel({ businessId }: AppointmentOutco
       fetchDueBookings()
     }, 30000)
     return () => clearInterval(interval)
-  }, [businessId, prevCount])
+  }, [businessId, prevFreshCount, hasInitialized])
 
   const handleOutcome = async (bookingId: string, outcome: 'completed' | 'no_show') => {
     setError(null)
@@ -105,7 +125,14 @@ export default function AppointmentOutcomePanel({ businessId }: AppointmentOutco
       // Remove from local list immediately to feel responsive
       const updated = dueBookings.filter(b => b.id !== bookingId)
       setDueBookings(updated)
-      setPrevCount(updated.length)
+      
+      // Update fresh count for remaining items
+      const STALE_THRESHOLD_MINUTES = 60
+      const now = new Date()
+      const thresholdTime = new Date(now.getTime() - STALE_THRESHOLD_MINUTES * 60 * 1000)
+      const freshBookings = updated.filter(b => new Date(b.start_time) >= thresholdTime)
+      setPrevFreshCount(freshBookings.length)
+      
       if (currentIndex >= updated.length && updated.length > 0) {
         setCurrentIndex(updated.length - 1)
       }
@@ -167,7 +194,7 @@ export default function AppointmentOutcomePanel({ businessId }: AppointmentOutco
       >
         <div className="w-2.5 h-2.5 rounded-full bg-white animate-ping"></div>
         <span>
-          {dueBookings.length} {dueBookings.length === 1 ? 'appointment needs' : 'appointments need'} outcome
+          {dueBookings.length} {dueBookings.length === 1 ? 'appointment needs outcome' : 'appointments need outcome'}
         </span>
       </div>
     )
@@ -181,13 +208,13 @@ export default function AppointmentOutcomePanel({ businessId }: AppointmentOutco
         <div className="flex items-center space-x-2">
           <Clock className="w-4 h-4 text-white animate-pulse" />
           <span className="font-extrabold text-xs uppercase tracking-wider">
-            Appointment Due Now
+            Appointment due now
           </span>
         </div>
         <button 
           onClick={() => handleMinimize(true)}
           className="text-indigo-100 hover:text-white p-1 hover:bg-indigo-700/50 rounded-lg transition-colors cursor-pointer"
-          title="Minimize Outcome Panel"
+          title="Minimize"
         >
           <Minus className="w-4 h-4 stroke-[2.5]" />
         </button>
@@ -291,17 +318,17 @@ export default function AppointmentOutcomePanel({ businessId }: AppointmentOutco
           <div className="flex items-center space-x-2">
             <button
               onClick={() => handleOutcome(activeBooking.id, 'completed')}
-              className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold rounded-xl flex items-center justify-center space-x-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-750 text-white text-xs font-extrabold rounded-xl flex items-center justify-center space-x-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
             >
               <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-              <span>He's Arrived</span>
+              <span>Arrived</span>
             </button>
             <button
               onClick={() => handleOutcome(activeBooking.id, 'no_show')}
               className="flex-1 py-2.5 border border-slate-200 hover:border-red-200 hover:bg-red-50 text-red-650 hover:text-red-750 text-xs font-extrabold rounded-xl flex items-center justify-center space-x-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-500/20"
             >
               <X className="w-3.5 h-3.5" />
-              <span>No-Show</span>
+              <span>No-show</span>
             </button>
           </div>
 
@@ -310,7 +337,7 @@ export default function AppointmentOutcomePanel({ businessId }: AppointmentOutco
             className="w-full py-2 border border-slate-250 hover:bg-slate-50 text-slate-650 text-xs font-bold rounded-xl transition-colors flex items-center justify-center space-x-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
           >
             <ExternalLink className="w-3.5 h-3.5" />
-            <span>Open Booking</span>
+            <span>Open booking</span>
           </button>
         </div>
       </div>
