@@ -9,7 +9,9 @@ import {
   CheckCircle2, 
   Phone, 
   Sparkles,
-  Info
+  Info,
+  Copy,
+  ExternalLink
 } from 'lucide-react'
 
 interface Service {
@@ -37,6 +39,7 @@ export default function Home() {
   const [business, setBusiness] = useState<BusinessDetails | null>(null)
   const [services, setServices] = useState<Service[]>([])
   const [loading, setLoading] = useState(true)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     async function loadHomeData() {
@@ -85,42 +88,101 @@ export default function Home() {
     return `R ${(cents / 100).toFixed(2)}`
   }
 
+  // De-duplicates address fields if parts of city/province/postal are already inside address_line_1
   const renderAddress = () => {
     if (!business) return null
 
-    const line1 = business.address_line_1?.trim()
+    const line1 = business.address_line_1?.trim() || ''
     
-    // suburb and city (avoid duplicating if suburb equals city)
-    const suburb = business.suburb?.trim()
-    const city = business.city?.trim()
-    const suburbCityParts = [suburb, city].filter(Boolean)
-    const suburbCity = suburb === city 
-      ? city 
-      : suburbCityParts.join(', ')
+    const suburbStr = business.suburb?.trim() || ''
+    const showSuburb = suburbStr && !line1.toLowerCase().includes(suburbStr.toLowerCase())
+    
+    const cityStr = business.city?.trim() || ''
+    const provinceStr = business.province?.trim() || ''
+    
+    const cityProvinceParts = [
+      line1.toLowerCase().includes(cityStr.toLowerCase()) ? '' : cityStr,
+      line1.toLowerCase().includes(provinceStr.toLowerCase()) ? '' : provinceStr
+    ].filter(Boolean)
+    const cityProvince = cityProvinceParts.join(', ')
 
-    // province and postal code
-    const province = business.province?.trim()
-    const postalCode = business.postal_code?.trim()
-    const provPostalParts = [province, postalCode].filter(Boolean)
-    const provPostal = provPostalParts.join(', ')
+    const postalCodeStr = business.postal_code?.trim() || ''
+    const showPostal = postalCodeStr && !line1.toLowerCase().includes(postalCodeStr.toLowerCase())
 
-    const country = business.country?.trim()
+    const countryStr = business.country?.trim() || ''
+    const showCountry = countryStr && !line1.toLowerCase().includes(countryStr.toLowerCase())
 
-    // Filter out completely empty lines
-    const lines = [line1, suburbCity, provPostal, country].filter(Boolean)
+    const lines: string[] = []
+    if (line1) lines.push(line1)
+    if (showSuburb && suburbStr) lines.push(suburbStr)
+    if (cityProvince) lines.push(cityProvince)
+    if (showPostal && postalCodeStr) lines.push(postalCodeStr)
+    if (showCountry && countryStr) lines.push(countryStr)
 
     if (lines.length === 0) {
       return <p className="text-slate-800 leading-normal font-semibold">Located in Plumstead, Cape Town.</p>
     }
 
     return (
-      <div className="space-y-0.5 text-slate-800 leading-normal font-semibold">
+      <div className="space-y-0.5 text-slate-805 leading-normal font-semibold text-xs sm:text-sm">
         {lines.map((line, idx) => (
           <p key={idx}>{line}</p>
         ))}
       </div>
     )
   }
+
+  // Generates clean single-line address for Google Maps and Clipboard Copy
+  const getFullAddressString = (): string => {
+    if (!business) return ''
+
+    const line1 = business.address_line_1?.trim() || ''
+    
+    const suburbStr = business.suburb?.trim() || ''
+    const showSuburb = suburbStr && !line1.toLowerCase().includes(suburbStr.toLowerCase())
+    
+    const cityStr = business.city?.trim() || ''
+    const provinceStr = business.province?.trim() || ''
+    
+    const cityProvinceParts = [
+      line1.toLowerCase().includes(cityStr.toLowerCase()) ? '' : cityStr,
+      line1.toLowerCase().includes(provinceStr.toLowerCase()) ? '' : provinceStr
+    ].filter(Boolean)
+    const cityProvince = cityProvinceParts.join(', ')
+
+    const postalCodeStr = business.postal_code?.trim() || ''
+    const showPostal = postalCodeStr && !line1.toLowerCase().includes(postalCodeStr.toLowerCase())
+
+    const countryStr = business.country?.trim() || ''
+    const showCountry = countryStr && !line1.toLowerCase().includes(countryStr.toLowerCase())
+
+    const parts: string[] = []
+    if (line1) parts.push(line1)
+    if (showSuburb && suburbStr) parts.push(suburbStr)
+    if (cityProvince) parts.push(cityProvince)
+    if (showPostal && postalCodeStr) parts.push(postalCodeStr)
+    if (showCountry && countryStr) parts.push(countryStr)
+
+    return parts.join(', ') || 'Plumstead, Cape Town'
+  }
+
+  const handleCopyAddress = () => {
+    const addressStr = getFullAddressString()
+    if (!addressStr) return
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(addressStr)
+        .then(() => {
+          setCopied(true)
+          setTimeout(() => setCopied(false), 2000)
+        })
+        .catch(err => {
+          console.error('Failed to copy address:', err)
+        })
+    }
+  }
+
+  const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(getFullAddressString())}`
 
   const nearbySuburbs = ["Diep River", "Wynberg", "Constantia", "Kenilworth", "Claremont", "Tokai", "Meadowridge"]
 
@@ -324,22 +386,44 @@ export default function Home() {
       <section className="bg-white rounded-2xl shadow-xs border border-slate-200/80 p-6 sm:p-10 max-w-4xl mx-auto space-y-6">
         <div className="flex items-center space-x-2">
           <MapPin className="w-5 h-5 text-indigo-600" />
-          <h2 className="text-lg font-black tracking-tight text-slate-900 uppercase">Visit Groomers</h2>
+          <h2 className="text-lg font-black tracking-tight text-slate-900 uppercase">Visit Groomers Dog Parlour in Plumstead</h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
           <div className="space-y-3">
-            <h3 className="font-bold text-slate-900 text-sm">Conveniently Located in Plumstead</h3>
+            <h3 className="font-bold text-slate-900 text-sm">Find us behind Prosper</h3>
             <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-semibold">
-              Our dog parlour is easily accessible for pet owners across the Cape Town Southern Suburbs. We maintain a clean, secure, and professional environment.
+              Find Groomers Dog Parlour in Plumstead, behind Prosper. We’re conveniently located for dog owners in the Cape Town Southern Suburbs.
             </p>
             
             <div className="pt-2 text-xs text-slate-400 font-bold">
-              <p className="uppercase text-[10px] tracking-wider mb-1">Physical Address:</p>
+              <p className="uppercase text-[10px] tracking-wider mb-2">Physical Address:</p>
               <div className="flex items-start gap-1">
                 <MapPin className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
-                <div className="space-y-1.5">
+                <div className="space-y-2 w-full">
                   {renderAddress()}
+                  
+                  {business && (
+                    <div className="pt-2 flex flex-wrap gap-2">
+                      <button
+                        onClick={handleCopyAddress}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-750 text-[11px] font-bold rounded-lg transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                      >
+                        <Copy className="w-3.5 h-3.5 text-slate-500" />
+                        <span>{copied ? 'Address copied' : 'Copy address'}</span>
+                      </button>
+                      <a
+                        href={googleMapsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-750 hover:text-indigo-700 text-[11px] font-bold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
+                        <span>Open in Maps</span>
+                      </a>
+                    </div>
+                  )}
+
                   <p className="text-[11px] text-slate-500 font-medium italic pt-1.5">
                     Need help finding us? Contact the parlour and we’ll guide you to the entrance.
                   </p>
