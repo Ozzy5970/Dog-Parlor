@@ -30,6 +30,7 @@ export default function AppointmentOutcomePanel({ businessId }: AppointmentOutco
     return localStorage.getItem('arrival_panel_minimized') === 'true'
   })
   const [error, setError] = useState<string | null>(null)
+  const [actionLoading, setActionLoading] = useState(false)
   
   // Track last seen count of fresh due bookings to auto-expand on new items
   const [prevFreshCount, setPrevFreshCount] = useState(0)
@@ -120,6 +121,7 @@ export default function AppointmentOutcomePanel({ businessId }: AppointmentOutco
 
   const handleOutcome = async (bookingId: string, outcome: 'completed' | 'no_show') => {
     setError(null)
+    setActionLoading(true)
     try {
       await updateBookingStatus(businessId, bookingId, outcome)
       // Remove from local list immediately to feel responsive
@@ -138,7 +140,14 @@ export default function AppointmentOutcomePanel({ businessId }: AppointmentOutco
       }
     } catch (e: any) {
       console.error('Failed to save booking outcome:', e)
-      setError('Could not update status. Please try again.')
+      if (e.message === 'CONCURRENCY_ERROR') {
+        setError('This booking was already updated. Refreshing...')
+        await fetchDueBookings()
+      } else {
+        setError('Could not update status. Please try again.')
+      }
+    } finally {
+      setActionLoading(false)
     }
   }
 
@@ -318,14 +327,16 @@ export default function AppointmentOutcomePanel({ businessId }: AppointmentOutco
           <div className="flex items-center space-x-2">
             <button
               onClick={() => handleOutcome(activeBooking.id, 'completed')}
-              className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-750 text-white text-xs font-extrabold rounded-xl flex items-center justify-center space-x-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              disabled={actionLoading}
+              className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-750 text-white text-xs font-extrabold rounded-xl flex items-center justify-center space-x-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Check className="w-3.5 h-3.5 stroke-[2.5]" />
               <span>Arrived</span>
             </button>
             <button
               onClick={() => handleOutcome(activeBooking.id, 'no_show')}
-              className="flex-1 py-2.5 border border-slate-200 hover:border-red-200 hover:bg-red-50 text-red-650 hover:text-red-750 text-xs font-extrabold rounded-xl flex items-center justify-center space-x-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-500/20"
+              disabled={actionLoading}
+              className="flex-1 py-2.5 border border-slate-200 hover:border-red-200 hover:bg-red-50 text-red-650 hover:text-red-750 text-xs font-extrabold rounded-xl flex items-center justify-center space-x-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <X className="w-3.5 h-3.5" />
               <span>No-show</span>

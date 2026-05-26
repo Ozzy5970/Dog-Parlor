@@ -91,6 +91,20 @@ export async function updateBookingStatus(
   status: Booking['status'],
   adminNotes?: string | null
 ): Promise<Booking> {
+  // Enforce valid status transition rules
+  let allowedPrevious: Booking['status'][] = []
+  if (status === 'confirmed') {
+    allowedPrevious = ['pending']
+  } else if (status === 'cancelled') {
+    allowedPrevious = ['pending', 'confirmed']
+  } else if (status === 'completed') {
+    allowedPrevious = ['confirmed']
+  } else if (status === 'no_show') {
+    allowedPrevious = ['confirmed']
+  } else {
+    throw new Error('Invalid status transition')
+  }
+
   const updates: any = { status }
   if (adminNotes !== undefined) {
     updates.admin_notes = adminNotes
@@ -101,6 +115,7 @@ export async function updateBookingStatus(
     .update(updates)
     .eq('id', bookingId)
     .eq('business_id', businessId)
+    .in('status', allowedPrevious)
     .select(`
       *,
       customer:customers (
@@ -132,10 +147,14 @@ export async function updateBookingStatus(
         price_cents
       )
     `)
-    .single()
 
   if (error) throw error
-  return data as any as Booking
+  
+  if (!data || data.length === 0) {
+    throw new Error('CONCURRENCY_ERROR')
+  }
+  
+  return data[0] as any as Booking
 }
 
 export async function updateBookingAdminNotes(

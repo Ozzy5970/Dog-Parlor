@@ -168,7 +168,12 @@ export default function Dashboard() {
       await loadDashboardData(profile.business_id)
     } catch (err: any) {
       console.error('Error approving booking:', err)
-      setError(err.message || 'Failed to confirm appointment.')
+      if (err.message === 'CONCURRENCY_ERROR') {
+        setError('This booking was already updated. Refreshing...')
+        await loadDashboardData(profile.business_id)
+      } else {
+        setError(err.message || 'Failed to confirm appointment.')
+      }
     } finally {
       setActionLoading(null)
     }
@@ -182,7 +187,12 @@ export default function Dashboard() {
       await loadDashboardData(profile.business_id)
     } catch (err: any) {
       console.error('Error cancelling booking:', err)
-      setError(err.message || 'Failed to cancel appointment.')
+      if (err.message === 'CONCURRENCY_ERROR') {
+        setError('This booking was already updated. Refreshing...')
+        await loadDashboardData(profile.business_id)
+      } else {
+        setError(err.message || 'Failed to cancel appointment.')
+      }
     } finally {
       setActionLoading(null)
     }

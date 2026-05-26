@@ -473,7 +473,12 @@ export default function Bookings() {
       )
     } catch (err: any) {
       console.error('Error updating status:', err)
-      setError(err.message || `Failed to update status to ${newStatus}.`)
+      if (err.message === 'CONCURRENCY_ERROR') {
+        setError('This booking was already updated. Refreshing...')
+        await loadBookings(profile.business_id, true)
+      } else {
+        setError(err.message || `Failed to update status to ${newStatus}.`)
+      }
     } finally {
       setActionLoading(null)
       setConfirmCancelId(null)

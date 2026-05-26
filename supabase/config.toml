@@ -1,0 +1,2 @@
+[functions.submit-booking-request]
+verify_jwt = false

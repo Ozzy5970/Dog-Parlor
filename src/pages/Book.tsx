@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { normalizeSaPhone } from '../lib/phone'
 import { checkAvailability, type AvailableSlot } from '../services/availabilityService'
 import { submitBookingRequest } from '../services/bookingRequestService'
+import Turnstile from '../components/Turnstile'
 import { utcToLocalTimeParts } from '../lib/dateTime'
 import { FormField, AlertMessage } from '../components/UI'
 import { 
@@ -72,6 +73,8 @@ export default function Book() {
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const [consentAgreed, setConsentAgreed] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
+  const [turnstileResetKey, setTurnstileResetKey] = useState<number>(0)
 
   // Helper: compute next likely valid bookable date starting from today
   const getNextValidBookableDateStr = (currentSettings?: BusinessSettings | null) => {
@@ -262,7 +265,8 @@ export default function Book() {
         customer_notes: customerNotes.trim() || null,
         pet_age_years: petAge ? parseFloat(petAge) : null,
         surname: surname.trim() || null,
-      })
+        turnstile_token: turnstileToken, // Pass token
+      } as any)
 
       if (result.success) {
         const service = services.find((s) => s.id === selectedServiceId)
@@ -303,9 +307,15 @@ export default function Book() {
           message = 'Dog age must be between 0 and 40.'
         }
         setSubmitError(message)
+        // Reset turnstile widget on failure
+        setTurnstileToken(null)
+        setTurnstileResetKey(prev => prev + 1)
       }
     } catch (err: any) {
       setSubmitError('An unexpected connection error occurred. Please check your internet connection and try again.')
+      // Reset turnstile widget on failure
+      setTurnstileToken(null)
+      setTurnstileResetKey(prev => prev + 1)
     } finally {
       setSubmitting(false)
     }
@@ -624,6 +634,7 @@ export default function Book() {
                     id="owner-name"
                     type="text"
                     required
+                    maxLength={80}
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="John"
@@ -634,6 +645,7 @@ export default function Book() {
                   <input
                     id="owner-surname"
                     type="text"
+                    maxLength={80}
                     value={surname}
                     onChange={(e) => setSurname(e.target.value)}
                     placeholder="Doe"
@@ -646,6 +658,7 @@ export default function Book() {
                     id="owner-phone"
                     type="tel"
                     required
+                    maxLength={30}
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="e.g., 082 123 4567"
@@ -661,6 +674,7 @@ export default function Book() {
                 <input
                   id="owner-email"
                   type="email"
+                  maxLength={120}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="john.doe@example.com"
@@ -677,6 +691,7 @@ export default function Book() {
                     id="pet-name"
                     type="text"
                     required
+                    maxLength={80}
                     value={petName}
                     onChange={(e) => setPetName(e.target.value)}
                     placeholder="Fido"
@@ -687,6 +702,7 @@ export default function Book() {
                   <input
                     id="pet-breed"
                     type="text"
+                    maxLength={80}
                     value={petBreed}
                     onChange={(e) => setPetBreed(e.target.value)}
                     placeholder="Poodle, Golden Retriever..."
@@ -729,6 +745,7 @@ export default function Book() {
                   <input
                     id="pet-notes"
                     type="text"
+                    maxLength={500}
                     value={petNotes}
                     onChange={(e) => setPetNotes(e.target.value)}
                     placeholder="Nervous, hates nail clipping..."
@@ -742,6 +759,7 @@ export default function Book() {
               <FormField label="Special Instructions / Booking Notes" htmlFor="customer-notes" optionalText="Optional">
                 <textarea
                   id="customer-notes"
+                  maxLength={500}
                   value={customerNotes}
                   onChange={(e) => setCustomerNotes(e.target.value)}
                   placeholder="Any additional details or requirements for this appointment..."
@@ -876,6 +894,15 @@ export default function Book() {
             )}
           </div>
 
+          {/* Cloudflare Turnstile Bot Protection */}
+          <Turnstile
+            key={turnstileResetKey}
+            sitekey={import.meta.env.VITE_TURNSTILE_SITE_KEY || '1x00000000000000000000AA'}
+            onVerify={(token) => setTurnstileToken(token)}
+            onExpire={() => setTurnstileToken(null)}
+            onError={() => setTurnstileToken(null)}
+          />
+
           {/* Consent Checkbox */}
           <div className="bg-slate-50 border border-slate-200/80 p-5 rounded-2xl space-y-3 text-xs font-semibold text-slate-650">
             <label className="flex items-start gap-3 cursor-pointer select-none">
@@ -908,7 +935,7 @@ export default function Book() {
             </button>
             <button
               type="button"
-              disabled={submitting || !consentAgreed}
+              disabled={submitting || !consentAgreed || !turnstileToken}
               onClick={handleSubmitBooking}
               className="px-6 py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md flex items-center gap-2 cursor-pointer text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
             >
