@@ -30,6 +30,7 @@ interface BusinessSettings {
   timezone: string
   max_advance_days: number
   min_notice_hours: number
+  min_notice_minutes: number
   whatsapp_number: string | null
 }
 
@@ -76,10 +77,10 @@ export default function Book() {
   const getNextValidBookableDateStr = (currentSettings?: BusinessSettings | null) => {
     const activeSettings = currentSettings || settings
     const tz = activeSettings?.timezone || 'Africa/Johannesburg'
-    const minNotice = activeSettings?.min_notice_hours ?? 2
+    const minNoticeMinutes = activeSettings?.min_notice_minutes ?? (activeSettings?.min_notice_hours ? activeSettings.min_notice_hours * 60 : 5)
     
     const now = new Date()
-    const earliestTime = new Date(now.getTime() + minNotice * 60 * 60 * 1000)
+    const earliestTime = new Date(now.getTime() + minNoticeMinutes * 60 * 1000)
     let current = utcToLocalTimeParts(earliestTime, tz)
     
     for (let i = 0; i < 7; i++) {
@@ -156,7 +157,7 @@ export default function Book() {
         // Fetch business settings
         const { data: settingsData, error: settingsError } = await supabase
           .from('business_settings')
-          .select('timezone, max_advance_days, min_notice_hours, whatsapp_number')
+          .select('timezone, max_advance_days, min_notice_hours, min_notice_minutes, whatsapp_number')
           .eq('business_id', bizData.id)
           .maybeSingle()
 
@@ -166,6 +167,7 @@ export default function Book() {
           timezone: settingsData?.timezone || 'Africa/Johannesburg',
           max_advance_days: settingsData?.max_advance_days ?? 60,
           min_notice_hours: settingsData?.min_notice_hours ?? 2,
+          min_notice_minutes: settingsData?.min_notice_minutes ?? 5,
           whatsapp_number: settingsData?.whatsapp_number || null,
         }
         setSettings(loadedSettings)

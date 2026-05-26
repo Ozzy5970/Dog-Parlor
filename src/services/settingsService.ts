@@ -21,6 +21,7 @@ export interface BookingSettings {
   slot_interval_minutes: number
   booking_approval_mode: string
   min_notice_hours: number
+  min_notice_minutes: number
   max_advance_days: number
   privacy_contact_text: string | null
   booking_policy_extra_notes: string | null

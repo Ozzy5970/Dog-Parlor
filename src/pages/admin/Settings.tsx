@@ -68,6 +68,7 @@ export default function Settings() {
     whatsapp_number: '',
     slot_interval_minutes: 30,
     min_notice_hours: 2,
+    min_notice_minutes: 5,
     max_advance_days: 60,
     privacy_contact_text: '',
     booking_policy_extra_notes: '',
@@ -183,8 +184,14 @@ export default function Settings() {
       return
     }
 
-    if (settings.min_notice_hours === undefined || settings.min_notice_hours < 0) {
-      setError('Minimum booking notice hours cannot be negative.')
+    if (settings.min_notice_minutes === undefined || settings.min_notice_minutes < 0) {
+      setError('Minimum booking notice minutes cannot be negative.')
+      setSaving(false)
+      return
+    }
+
+    if (settings.min_notice_minutes > 1440) {
+      setError('Minimum booking notice minutes cannot exceed 24 hours (1440 minutes).')
       setSaving(false)
       return
     }
@@ -216,6 +223,7 @@ export default function Settings() {
       // Keep booking_approval_mode forced to 'manual_approval' per user request
       const updatedSettings = {
         ...settings,
+        min_notice_hours: Math.floor((settings.min_notice_minutes ?? 5) / 60),
         booking_approval_mode: 'manual_approval',
       }
 
@@ -524,13 +532,14 @@ export default function Settings() {
                 />
               </FormField>
 
-              <FormField label="Minimum Notice (Hours)" required>
+              <FormField label="Minimum Notice (Minutes)" required>
                 <input
                   type="number"
-                  name="min_notice_hours"
+                  name="min_notice_minutes"
                   min="0"
+                  max="1440"
                   required
-                  value={settings.min_notice_hours !== undefined ? settings.min_notice_hours : ''}
+                  value={settings.min_notice_minutes !== undefined ? settings.min_notice_minutes : ''}
                   onChange={handleSettingsChange}
                   className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-800 text-sm"
                 />

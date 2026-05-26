@@ -11,6 +11,8 @@ import {
   BarChart2,
   Users
 } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
+import AppointmentOutcomePanel from './admin/AppointmentOutcomePanel'
 
 interface LayoutProps {
   children: React.ReactNode
@@ -19,6 +21,7 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const location = useLocation()
   const isAdmin = location.pathname.startsWith('/admin')
+  const { profile } = useAuth()
 
   return (
     <div className="min-h-screen bg-slate-50/50 text-slate-800 flex flex-col font-sans selection:bg-indigo-500/10 selection:text-indigo-900">
@@ -189,6 +192,9 @@ export default function Layout({ children }: LayoutProps) {
         </div>
       </footer>
 
+      {isAdmin && profile?.business_id && (
+        <AppointmentOutcomePanel businessId={profile.business_id} />
+      )}
     </div>
   )
 }

@@ -33,7 +33,7 @@ import {
 import { fetchAdminBookingsForRange, updateBookingStatus, type Booking } from '../../services/bookingAdminService'
 import { localTimeToUTC, utcToLocalTimeParts } from '../../lib/dateTime'
 import { supabase } from '../../lib/supabase'
-import { createWhatsAppLink, getPendingBookingMessage, getConfirmedBookingMessage, getCancelledBookingMessage } from '../../lib/whatsapp'
+import { createWhatsAppLink, getPendingBookingMessage, getCancelledBookingMessage, getTodayReminderMessage } from '../../lib/whatsapp'
 
 const sourceLabels: Record<string, string> = {
   online: 'Online',
@@ -246,7 +246,7 @@ export default function Dashboard() {
     if (booking.status === 'pending') {
       message = getPendingBookingMessage(cName, businessName, pName, dateStr, timeStr)
     } else if (booking.status === 'confirmed') {
-      message = getConfirmedBookingMessage(cName, businessName, pName, dateStr, timeStr)
+      message = getTodayReminderMessage(cName, pName, timeStr)
     } else {
       message = getCancelledBookingMessage(cName, businessName, pName, dateStr, timeStr)
     }
@@ -479,6 +479,29 @@ export default function Dashboard() {
                       <span className="text-[9px] font-extrabold uppercase tracking-wider text-slate-450 bg-slate-50 border border-slate-150 px-1.5 py-0.5 rounded-md hidden sm:inline-block">
                         {sourceLabels[b.source] || b.source}
                       </span>
+                      {b.status === 'confirmed' && b.customer?.phone && (
+                        (() => {
+                          const reminderLink = createWhatsAppLink(
+                            b.customer.phone,
+                            getTodayReminderMessage(
+                              b.customer.full_name,
+                              b.pet?.name || 'your dog',
+                              formatLocalTime(b.start_time)
+                            )
+                          )
+                          return reminderLink ? (
+                            <a
+                              href={reminderLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title="Send WhatsApp Reminder"
+                              className="p-1.5 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                            >
+                              <MessageCircle className="w-4 h-4 fill-emerald-100" />
+                            </a>
+                          ) : null
+                        })()
+                      )}
                       {(() => {
                         let status: 'pending' | 'active' | 'success' | 'danger' | 'inactive' = 'inactive'
                         let label: string = b.status

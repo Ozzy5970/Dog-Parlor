@@ -26,7 +26,7 @@ import {
   VolumeX,
   Bell
 } from 'lucide-react'
-import { createWhatsAppLink, getPendingBookingMessage, getConfirmedBookingMessage, getCancelledBookingMessage } from '../../lib/whatsapp'
+import { createWhatsAppLink, getPendingBookingMessage, getConfirmedBookingMessage, getCancelledBookingMessage, getTodayReminderMessage } from '../../lib/whatsapp'
 import {
   PageHeader,
   SectionCard,
@@ -851,11 +851,17 @@ export default function Bookings() {
                   const dateStr = formatLocalDatePart(booking.start_time)
                   const timeStr = formatLocalTimePart(booking.start_time)
                   
+                  const isToday = new Date(booking.start_time).toDateString() === new Date().toDateString()
+                  
                   let message = ''
                   if (booking.status === 'pending') {
                     message = getPendingBookingMessage(cName, businessName, pName, dateStr, timeStr)
                   } else if (booking.status === 'confirmed') {
-                    message = getConfirmedBookingMessage(cName, businessName, pName, dateStr, timeStr)
+                    if (isToday) {
+                      message = getTodayReminderMessage(cName, pName, timeStr)
+                    } else {
+                      message = getConfirmedBookingMessage(cName, businessName, pName, dateStr, timeStr)
+                    }
                   } else {
                     message = getCancelledBookingMessage(cName, businessName, pName, dateStr, timeStr)
                   }
@@ -870,7 +876,9 @@ export default function Bookings() {
                       className="w-full py-2 border border-slate-200 hover:border-emerald-200 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 text-xs font-bold rounded-xl transition-all flex items-center justify-center space-x-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 cursor-pointer"
                     >
                       <MessageCircle className="w-3.5 h-3.5 fill-emerald-100 group-hover:fill-emerald-200" />
-                      <span>WhatsApp Client</span>
+                      <span>
+                        {booking.status === 'confirmed' && isToday ? 'WhatsApp Reminder' : 'WhatsApp Client'}
+                      </span>
                     </a>
                   ) : null
                 })()}

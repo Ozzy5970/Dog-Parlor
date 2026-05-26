@@ -26,7 +26,7 @@ import {
   fetchAdminBookingsForRange,
   type Booking
 } from '../../services/bookingAdminService'
-import { createWhatsAppLink, getPendingBookingMessage, getConfirmedBookingMessage, getCancelledBookingMessage } from '../../lib/whatsapp'
+import { createWhatsAppLink, getPendingBookingMessage, getConfirmedBookingMessage, getCancelledBookingMessage, getTodayReminderMessage } from '../../lib/whatsapp'
 
 // Helper to format price from cents to Rands
 const formatPrice = (cents: number): string => {
@@ -267,7 +267,6 @@ export default function Schedule() {
     )
   }
 
-  // WhatsApp Link Helper
   const getWhatsAppLink = (booking: Booking) => {
     if (!booking.customer?.phone) return '#'
     const cName = booking.customer.full_name
@@ -275,11 +274,19 @@ export default function Schedule() {
     const localTime = formatLocalTime(booking.start_time)
     const localDate = formatLocalDateLong(selectedDateStr)
     
+    const todayLocal = utcToLocalTimeParts(new Date(), timezone)
+    const todayStr = `${todayLocal.year}-${String(todayLocal.month + 1).padStart(2, '0')}-${String(todayLocal.day).padStart(2, '0')}`
+    const isToday = selectedDateStr === todayStr
+    
     let message = ''
     if (booking.status === 'pending') {
       message = getPendingBookingMessage(cName, businessName, pName, localDate, localTime)
     } else if (booking.status === 'confirmed') {
-      message = getConfirmedBookingMessage(cName, businessName, pName, localDate, localTime)
+      if (isToday) {
+        message = getTodayReminderMessage(cName, pName, localTime)
+      } else {
+        message = getConfirmedBookingMessage(cName, businessName, pName, localDate, localTime)
+      }
     } else {
       message = getCancelledBookingMessage(cName, businessName, pName, localDate, localTime)
     }
@@ -575,7 +582,6 @@ export default function Schedule() {
                           </div>
                         )}
 
-                        {/* WhatsApp Contact Action */}
                         {booking.customer?.phone && getWhatsAppLink(booking) !== '#' && (
                           <a
                             href={getWhatsAppLink(booking)}
@@ -584,7 +590,15 @@ export default function Schedule() {
                             className="w-full py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 text-xs font-bold rounded-xl transition-all flex items-center justify-center space-x-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 cursor-pointer border border-emerald-200/50"
                           >
                             <MessageCircle className="w-4 h-4 fill-emerald-100" />
-                            <span>Contact via WhatsApp</span>
+                            <span>
+                              {(() => {
+                                const todayLocal = utcToLocalTimeParts(new Date(), timezone)
+                                const todayStr = `${todayLocal.year}-${String(todayLocal.month + 1).padStart(2, '0')}-${String(todayLocal.day).padStart(2, '0')}`
+                                return booking.status === 'confirmed' && selectedDateStr === todayStr
+                                  ? 'Send WhatsApp Reminder'
+                                  : 'Contact via WhatsApp'
+                              })()}
+                            </span>
                           </a>
                         )}
                       </div>

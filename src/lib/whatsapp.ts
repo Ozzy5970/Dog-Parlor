@@ -91,5 +91,16 @@ export function getGeneralCustomerMessage(customerName: string, businessName: st
  * Generates a message from the customer to the business after an online booking request is made.
  */
 export function getCustomerToParlourMessage(petName: string): string {
-  return `Hi, I just submitted an online booking request for ${petName}. Please let me know when it is confirmed.`
+  return `Hi, I just submitted an online booking request for ${petName}. Please let us know when it is confirmed.`
+}
+
+/**
+ * Generates the pre-filled message template for today's appointment reminder.
+ */
+export function getTodayReminderMessage(
+  customerName: string,
+  petName: string,
+  timeStr: string
+): string {
+  return `Hi ${customerName}, this is a friendly reminder about ${petName}’s grooming appointment today at ${timeStr} with Groomers Dog Parlour. Please let us know if you need to reschedule.`
 }
