@@ -91,6 +91,7 @@ export default function Customers() {
   const [selectedPrimaryPet, setSelectedPrimaryPet] = useState('')
   const [selectedDuplicatePet, setSelectedDuplicatePet] = useState('')
   const [selectedCustomerHouseholdMembers, setSelectedCustomerHouseholdMembers] = useState<any[]>([])
+  const [modalSuccess, setModalSuccess] = useState<string | null>(null)
 
 
   // Local forms state (inside unified modal)
@@ -263,9 +264,10 @@ export default function Customers() {
     try {
       setLinkingLoading(true)
       setModalError(null)
+      setModalSuccess(null)
       const res = await mergeCustomerHouseholds(selectedCustomer.id, selectedCustomerToLink.id)
       if (!res.success) {
-        setModalError(res.error || 'Failed to link household.')
+        setModalError(res.error || 'Could not link household. Please try again.')
         return
       }
       
@@ -283,10 +285,14 @@ export default function Customers() {
       setTargetMembersToLink([])
       setSearchQueryLink('')
       setSearchResultsLink([])
-      setSuccessMsg('Households linked successfully.')
+      
+      setModalSuccess('Household linked successfully.')
+      setTimeout(() => {
+        setModalSuccess(null)
+      }, 4000)
     } catch (err: any) {
       console.error(err)
-      setModalError(err.message || 'Failed to link household.')
+      setModalError(err.message || 'Could not link household. Please try again.')
     } finally {
       setLinkingLoading(false)
     }
@@ -304,13 +310,17 @@ export default function Customers() {
     try {
       setLinkingLoading(true)
       setModalError(null)
+      setModalSuccess(null)
       const res = await mergeCustomerPets(selectedPrimaryPet, [selectedDuplicatePet])
       if (!res.success) {
-        setModalError(res.error || 'Failed to merge pets.')
+        setModalError(res.error || 'Could not link pet records. Please try again.')
         return
       }
 
-      setSuccessMsg('Pets marked as the same animal and booking histories consolidated successfully.')
+      setModalSuccess('Pet records linked successfully.')
+      setTimeout(() => {
+        setModalSuccess(null)
+      }, 4000)
       
       const bid = profile?.business_id
       if (bid) {
@@ -326,7 +336,7 @@ export default function Customers() {
       setSelectedDuplicatePet('')
     } catch (err: any) {
       console.error(err)
-      setModalError(err.message || 'Failed to merge pets.')
+      setModalError(err.message || 'Could not link pet records. Please try again.')
     } finally {
       setLinkingLoading(false)
     }
@@ -1482,6 +1492,7 @@ export default function Customers() {
               </button>
             </div>
 
+            {modalSuccess && <AlertMessage type="success" message={modalSuccess} />}
             {modalError && <AlertMessage type="error" message={modalError} />}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-h-[70vh] overflow-y-auto pr-1">
@@ -1592,9 +1603,16 @@ export default function Customers() {
                       <button
                         onClick={handleLinkCustomerSubmit}
                         disabled={linkingLoading}
-                        className="w-full py-2 bg-indigo-650 hover:bg-indigo-700 text-white font-bold rounded-xl flex items-center justify-center space-x-1.5 cursor-pointer shadow-xs text-xs"
+                        className="w-full py-2 bg-indigo-605 hover:bg-indigo-700 text-white font-bold rounded-xl flex items-center justify-center space-x-1.5 cursor-pointer shadow-xs text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        {linkingLoading ? <Loader2 className="w-4.5 h-4.5 animate-spin" /> : <span>Link customer</span>}
+                        {linkingLoading ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span>Linking...</span>
+                          </>
+                        ) : (
+                          <span>Link household</span>
+                        )}
                       </button>
                     </div>
                   )}
@@ -1687,7 +1705,14 @@ export default function Customers() {
                         disabled={!selectedPrimaryPet || !selectedDuplicatePet || linkingLoading}
                         className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl flex items-center justify-center space-x-1.5 cursor-pointer shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        {linkingLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <span>Mark as same pet</span>}
+                        {linkingLoading ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span>Marking...</span>
+                          </>
+                        ) : (
+                          <span>Mark as same pet</span>
+                        )}
                       </button>
                     </form>
                   </div>
