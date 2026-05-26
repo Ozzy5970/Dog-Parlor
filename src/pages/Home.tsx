@@ -94,7 +94,7 @@ export default function Home() {
           }
         })
       },
-      { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
+      { threshold: 0.15, rootMargin: '0px 0px -80px 0px' }
     )
 
     const elements = document.querySelectorAll('.reveal')
@@ -243,10 +243,10 @@ export default function Home() {
           Book grooming appointments online with Groomers Dog Parlour in Plumstead, Cape Town.
         </p>
         
-        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center w-full">
+        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center w-full animate-slideUp-delayed">
           <Link
             to="/book"
-            className="inline-flex items-center justify-center w-full sm:w-auto px-8 py-4 border border-transparent text-sm font-black rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 shadow-md hover:shadow-lg transition-all duration-150 cursor-pointer gap-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 active:translate-y-0.5"
+            className="inline-flex items-center justify-center w-full sm:w-auto px-8 py-4 border border-transparent text-sm font-black rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer gap-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 active:translate-y-0.5"
           >
             <CalendarRange className="w-5 h-5 stroke-[2.5]" />
             <span>Book an Appointment</span>
@@ -254,7 +254,7 @@ export default function Home() {
           {business?.phone && (
             <a
               href={`tel:${business.phone.replace(/[^0-9+]/g, '')}`}
-              className="inline-flex items-center justify-center w-full sm:w-auto px-8 py-4 border border-slate-200 text-sm font-black rounded-xl text-slate-700 hover:text-indigo-700 hover:bg-slate-50 transition-all duration-150 cursor-pointer gap-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              className="inline-flex items-center justify-center w-full sm:w-auto px-8 py-4 border border-slate-200 text-sm font-black rounded-xl text-slate-700 hover:text-indigo-700 hover:bg-slate-50 hover:-translate-y-0.5 hover:shadow-xs transition-all duration-200 cursor-pointer gap-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
             >
               <Phone className="w-4.5 h-4.5" />
               <span>Call Us</span>
@@ -290,7 +290,7 @@ export default function Home() {
 
       {/* 3. SERVICES SECTION */}
       <section className="space-y-8 max-w-4xl mx-auto px-4">
-        <div className="text-center space-y-2">
+        <div className="text-center space-y-2 reveal">
           <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">Dog Grooming Services</h2>
           <p className="text-sm text-slate-700 font-semibold max-w-lg mx-auto">
             Choose from our range of services tailored specifically for different dog sizes.
@@ -310,11 +310,11 @@ export default function Home() {
         ) : services.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
             {services.map((service, index) => {
-              const delayClass = index % 3 === 0 ? '' : index % 3 === 1 ? 'delay-150' : 'delay-300';
+              const delayClass = index % 3 === 0 ? '' : index % 3 === 1 ? 'delay-120' : 'delay-240';
               return (
                 <div 
                   key={service.id} 
-                  className={`bg-white rounded-2xl shadow-xs border border-slate-200/80 p-5 flex flex-col justify-between hover:border-indigo-200 hover:shadow-sm transition-all duration-200 reveal reveal-fade-up ${delayClass}`}
+                  className={`bg-white rounded-2xl shadow-xs border border-slate-200/80 p-5 flex flex-col justify-between hover:border-indigo-200 hover:shadow-md hover:-translate-y-1 transition-all duration-200 reveal ${delayClass}`}
                 >
                 <div className="space-y-3">
                   <div className="flex justify-between items-start">
@@ -348,15 +348,15 @@ export default function Home() {
         ) : (
           /* Fallback generic services list */
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            <div className="bg-white rounded-2xl border border-slate-200/80 p-5 space-y-2 reveal reveal-fade-up">
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-5 space-y-2 hover:-translate-y-1 hover:shadow-md transition-all duration-200 reveal">
               <h3 className="font-extrabold text-slate-900 text-sm">Full Grooming</h3>
               <p className="text-xs text-slate-700 font-semibold">Includes bath, blow-dry, brush-out, hair cut, nail clipping, and ear cleaning.</p>
             </div>
-            <div className="bg-white rounded-2xl border border-slate-200/80 p-5 space-y-2 reveal reveal-fade-up delay-150">
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-5 space-y-2 hover:-translate-y-1 hover:shadow-md transition-all duration-200 reveal delay-120">
               <h3 className="font-extrabold text-slate-900 text-sm">Bath and Brush</h3>
               <p className="text-xs text-slate-700 font-semibold">Includes warm bath, blow-dry, brush-out, and nail clipping.</p>
             </div>
-            <div className="bg-white rounded-2xl border border-slate-200/80 p-5 space-y-2 reveal reveal-fade-up delay-300">
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-5 space-y-2 hover:-translate-y-1 hover:shadow-md transition-all duration-200 reveal delay-240">
               <h3 className="font-extrabold text-slate-900 text-sm">Nail Clipping</h3>
               <p className="text-xs text-slate-700 font-semibold">Quick service to trim and shape your pet's nails safely.</p>
             </div>
@@ -379,7 +379,7 @@ export default function Home() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
-          <div className="flex flex-col items-center text-center space-y-3 p-4 bg-white rounded-2xl border border-slate-200/50 shadow-2xs reveal reveal-fade-up">
+          <div className="flex flex-col items-center text-center space-y-3 p-4 bg-white rounded-2xl border border-slate-200/50 shadow-2xs reveal hover:-translate-y-1 hover:shadow-md transition-all duration-200">
             <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
               <CalendarRange className="w-6 h-6" />
             </div>
@@ -389,7 +389,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="flex flex-col items-center text-center space-y-3 p-4 bg-white rounded-2xl border border-slate-200/50 shadow-2xs reveal reveal-fade-up delay-150">
+          <div className="flex flex-col items-center text-center space-y-3 p-4 bg-white rounded-2xl border border-slate-200/50 shadow-2xs reveal delay-120 hover:-translate-y-1 hover:shadow-md transition-all duration-200">
             <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
               <Scissors className="w-6 h-6" />
             </div>
@@ -399,7 +399,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="flex flex-col items-center text-center space-y-3 p-4 bg-white rounded-2xl border border-slate-200/50 shadow-2xs reveal reveal-fade-up delay-300">
+          <div className="flex flex-col items-center text-center space-y-3 p-4 bg-white rounded-2xl border border-slate-200/50 shadow-2xs reveal delay-240 hover:-translate-y-1 hover:shadow-md transition-all duration-200">
             <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
               <CheckCircle2 className="w-6 h-6" />
             </div>
@@ -412,14 +412,14 @@ export default function Home() {
       </section>
 
       {/* 5. LOCATION SECTION */}
-      <section className="bg-white rounded-2xl shadow-xs border border-slate-200/80 p-6 sm:p-10 max-w-4xl mx-auto space-y-6 reveal reveal-slide-right">
+      <section className="bg-white rounded-2xl shadow-xs border border-slate-200/80 p-6 sm:p-10 max-w-4xl mx-auto space-y-6">
         <div className="flex items-center space-x-2">
           <MapPin className="w-5 h-5 text-indigo-600" />
           <h2 className="text-lg font-black tracking-tight text-slate-900 uppercase">Visit Groomers Dog Parlour in Plumstead</h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-          <div className="space-y-3">
+          <div className="space-y-3 reveal reveal-slide-left">
             <h3 className="font-bold text-slate-900 text-sm">Find us behind Prosper</h3>
             <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-semibold">
               Find Groomers Dog Parlour in Plumstead, behind Prosper. We’re conveniently located for dog owners in the Cape Town Southern Suburbs.
@@ -460,7 +460,7 @@ export default function Home() {
               </div>
             </div>
           </div>
-          <div className="bg-slate-100/50 border border-slate-200 rounded-2xl p-6 flex flex-col justify-center items-center text-center space-y-2 min-h-[160px]">
+          <div className="bg-slate-100/50 border border-slate-200 rounded-2xl p-6 flex flex-col justify-center items-center text-center space-y-2 min-h-[160px] reveal reveal-slide-right">
             <MapPin className="w-10 h-10 text-indigo-300" />
             <p className="text-xs font-black text-slate-800 uppercase tracking-wider">Plumstead, Cape Town</p>
             <p className="text-[11px] text-slate-700 font-semibold">Southern Suburbs, Western Cape</p>
