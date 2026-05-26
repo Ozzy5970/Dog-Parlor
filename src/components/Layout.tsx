@@ -31,8 +31,12 @@ export default function Layout({ children }: LayoutProps) {
           <div className="w-full mx-auto px-4 py-3 sm:py-3.5 flex items-center justify-between transition-all duration-200 max-w-6xl">
             <Link to="/" className="flex items-center transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 rounded-lg p-1 hover:opacity-90">
               <img 
-                src="/logo-transparent.png" 
+                src="/logo-transparent-optimized.png" 
                 alt="Groomers" 
+                width={120}
+                height={52}
+                loading="eager"
+                decoding="async"
                 className="h-10 sm:h-13 w-auto object-contain"
                 onError={(e) => {
                   e.currentTarget.style.display = 'none';

@@ -84,6 +84,27 @@ export default function Home() {
     loadHomeData()
   }, [])
 
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('active')
+            observer.unobserve(entry.target)
+          }
+        })
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
+    )
+
+    const elements = document.querySelectorAll('.reveal')
+    elements.forEach((el) => observer.observe(el))
+
+    return () => {
+      elements.forEach((el) => observer.unobserve(el))
+    }
+  }, [loading, services])
+
   const formatPrice = (cents: number): string => {
     return `R ${(cents / 100).toFixed(2)}`
   }
@@ -198,8 +219,13 @@ export default function Home() {
         {/* Brand Logo */}
         <div className="mb-6 sm:mb-8 flex justify-center hover:scale-105 transition-transform duration-300">
           <img 
-            src="/logo-transparent.png" 
+            src="/logo-transparent-optimized.png" 
             alt="Groomers Dog Parlour Logo" 
+            width={128}
+            height={128}
+            loading="eager"
+            decoding="async"
+            fetchPriority="high"
             className="w-24 h-24 sm:w-32 sm:h-32 object-contain"
           />
         </div>
@@ -238,7 +264,7 @@ export default function Home() {
       </section>
 
       {/* 2. LOCAL TRUST SECTION */}
-      <section className="bg-white rounded-2xl shadow-xs border border-slate-200/80 p-6 sm:p-10 max-w-4xl mx-auto relative overflow-hidden">
+      <section className="bg-white rounded-2xl shadow-xs border border-slate-200/80 p-6 sm:p-10 max-w-4xl mx-auto relative overflow-hidden reveal reveal-slide-left">
         <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-50/50 rounded-bl-full -z-10"></div>
         <div className="space-y-4">
           <div className="flex items-center space-x-2">
@@ -283,11 +309,13 @@ export default function Home() {
           </div>
         ) : services.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            {services.map((service) => (
-              <div 
-                key={service.id} 
-                className="bg-white rounded-2xl shadow-xs border border-slate-200/80 p-5 flex flex-col justify-between hover:border-indigo-200 hover:shadow-sm transition-all duration-200"
-              >
+            {services.map((service, index) => {
+              const delayClass = index % 3 === 0 ? '' : index % 3 === 1 ? 'delay-150' : 'delay-300';
+              return (
+                <div 
+                  key={service.id} 
+                  className={`bg-white rounded-2xl shadow-xs border border-slate-200/80 p-5 flex flex-col justify-between hover:border-indigo-200 hover:shadow-sm transition-all duration-200 reveal reveal-fade-up ${delayClass}`}
+                >
                 <div className="space-y-3">
                   <div className="flex justify-between items-start">
                     <h3 className="font-extrabold text-slate-900 text-sm leading-tight capitalize">
@@ -314,20 +342,21 @@ export default function Home() {
                   </span>
                 </div>
               </div>
-            ))}
-          </div>
+            )
+          })}
+        </div>
         ) : (
           /* Fallback generic services list */
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            <div className="bg-white rounded-2xl border border-slate-200/80 p-5 space-y-2">
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-5 space-y-2 reveal reveal-fade-up">
               <h3 className="font-extrabold text-slate-900 text-sm">Full Grooming</h3>
               <p className="text-xs text-slate-700 font-semibold">Includes bath, blow-dry, brush-out, hair cut, nail clipping, and ear cleaning.</p>
             </div>
-            <div className="bg-white rounded-2xl border border-slate-200/80 p-5 space-y-2">
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-5 space-y-2 reveal reveal-fade-up delay-150">
               <h3 className="font-extrabold text-slate-900 text-sm">Bath and Brush</h3>
               <p className="text-xs text-slate-700 font-semibold">Includes warm bath, blow-dry, brush-out, and nail clipping.</p>
             </div>
-            <div className="bg-white rounded-2xl border border-slate-200/80 p-5 space-y-2">
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-5 space-y-2 reveal reveal-fade-up delay-300">
               <h3 className="font-extrabold text-slate-900 text-sm">Nail Clipping</h3>
               <p className="text-xs text-slate-700 font-semibold">Quick service to trim and shape your pet's nails safely.</p>
             </div>
@@ -350,7 +379,7 @@ export default function Home() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
-          <div className="flex flex-col items-center text-center space-y-3 p-4 bg-white rounded-2xl border border-slate-200/50 shadow-2xs">
+          <div className="flex flex-col items-center text-center space-y-3 p-4 bg-white rounded-2xl border border-slate-200/50 shadow-2xs reveal reveal-fade-up">
             <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
               <CalendarRange className="w-6 h-6" />
             </div>
@@ -360,7 +389,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="flex flex-col items-center text-center space-y-3 p-4 bg-white rounded-2xl border border-slate-200/50 shadow-2xs">
+          <div className="flex flex-col items-center text-center space-y-3 p-4 bg-white rounded-2xl border border-slate-200/50 shadow-2xs reveal reveal-fade-up delay-150">
             <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
               <Scissors className="w-6 h-6" />
             </div>
@@ -370,7 +399,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="flex flex-col items-center text-center space-y-3 p-4 bg-white rounded-2xl border border-slate-200/50 shadow-2xs">
+          <div className="flex flex-col items-center text-center space-y-3 p-4 bg-white rounded-2xl border border-slate-200/50 shadow-2xs reveal reveal-fade-up delay-300">
             <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
               <CheckCircle2 className="w-6 h-6" />
             </div>
@@ -383,7 +412,7 @@ export default function Home() {
       </section>
 
       {/* 5. LOCATION SECTION */}
-      <section className="bg-white rounded-2xl shadow-xs border border-slate-200/80 p-6 sm:p-10 max-w-4xl mx-auto space-y-6">
+      <section className="bg-white rounded-2xl shadow-xs border border-slate-200/80 p-6 sm:p-10 max-w-4xl mx-auto space-y-6 reveal reveal-slide-right">
         <div className="flex items-center space-x-2">
           <MapPin className="w-5 h-5 text-indigo-600" />
           <h2 className="text-lg font-black tracking-tight text-slate-900 uppercase">Visit Groomers Dog Parlour in Plumstead</h2>
