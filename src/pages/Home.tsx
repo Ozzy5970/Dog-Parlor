@@ -198,7 +198,7 @@ export default function Home() {
         {/* Brand Logo */}
         <div className="mb-6 sm:mb-8 flex justify-center hover:scale-105 transition-transform duration-300">
           <img 
-            src="/logo.png" 
+            src="/logo-transparent.png" 
             alt="Groomers Dog Parlour Logo" 
             className="w-24 h-24 sm:w-32 sm:h-32 object-contain"
           />
