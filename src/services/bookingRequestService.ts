@@ -21,6 +21,7 @@ export interface BookingRequestResult {
   success: boolean
   booking_id?: string
   error?: string
+  error_code?: string
 }
 
 /**
@@ -53,33 +54,43 @@ export async function submitBookingRequest(input: BookingRequestInput): Promise<
     if (error) {
       console.error('Edge Function invoke error:', error)
       let message = error.message || 'An unexpected error occurred while verifying details.'
+      let error_code = 'SERVER_CONFIG_ERROR'
       try {
-        const context = (error as any).context
-        if (context) {
-          const bodyText = await context.text()
-          const parsed = JSON.parse(bodyText)
-          if (parsed && parsed.error) {
-            message = parsed.error
+        const response = (error as any).context
+        if (response && typeof response.json === 'function') {
+          const parsed = await response.json()
+          if (parsed) {
+            if (parsed.error) message = parsed.error
+            if (parsed.error_code) error_code = parsed.error_code
           }
         }
       } catch (_) {
         // ignore
       }
-      return { success: false, error: message }
+      return { success: false, error: message, error_code }
     }
 
     if (!data) {
-      return { success: false, error: 'Empty response from booking service.' }
+      return { success: false, error_code: 'SERVER_CONFIG_ERROR', error: 'Empty response from booking service.' }
     }
 
     if (data.success === false) {
-      return { success: false, error: data.error || 'Request rejected.' }
+      return {
+        success: false,
+        error_code: data.error_code || 'BOOKING_RPC_FAILED',
+        error: data.error || 'Request rejected.'
+      }
     }
 
-    return data as BookingRequestResult
+    return {
+      success: true,
+      error_code: 'BOOKING_SUCCESS',
+      booking_id: data.booking_id
+    }
   } catch (err: any) {
     console.error('submitBookingRequest client exception:', err)
-    return { success: false, error: err.message || 'An unexpected connection error occurred.' }
+    return { success: false, error_code: 'SERVER_CONFIG_ERROR', error: err.message || 'An unexpected connection error occurred.' }
   }
 }
+
 

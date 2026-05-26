@@ -47,36 +47,41 @@ serve(async (req) => {
 
     if (!booking_input) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Booking payload is required.' }),
+        JSON.stringify({ success: false, error_code: 'BOOKING_RPC_FAILED', error: 'Booking payload is required.' }),
         {
-          status: 400,
-          headers: {
-            ...getCorsHeaders(req),
-            'Content-Type': 'application/json',
-          },
+          status: 200,
+          headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
         }
       )
     }
 
     // 1. Verify Turnstile Token
     const isLocal = isLocalDev()
-    const secretKey = Deno.env.get('TURNSTILE_SECRET_KEY') || (isLocal ? '1x00000000000000000000000000000000AA' : '');
+    const secretKey = Deno.env.get('TURNSTILE_SECRET_KEY') || (isLocal ? '1x00000000000000000000AA' : '');
 
     // In production, we do NOT allow silent fallback to dummy secret key
     if (!isLocal) {
       if (!secretKey || secretKey === '1x00000000000000000000AA' || secretKey === '1x00000000000000000000000000000000AA') {
-        console.error('TURNSTILE_SECRET_KEY is missing or contains a dummy value in production.');
+        console.error('[Config Error] TURNSTILE_SECRET_KEY is missing or contains a dummy value in production.');
         return new Response(
-          JSON.stringify({ success: false, error: 'Server configuration error' }),
+          JSON.stringify({ success: false, error_code: 'SERVER_CONFIG_ERROR', error: 'Server configuration error' }),
           {
             status: 500,
-            headers: {
-              ...getCorsHeaders(req),
-              'Content-Type': 'application/json',
-            },
+            headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
           }
         )
       }
+    }
+
+    if (!turnstile_token) {
+      console.warn('[Validation Warn] Turnstile token is missing in payload.');
+      return new Response(
+        JSON.stringify({ success: false, error_code: 'TURNSTILE_MISSING', error: 'Verification token is missing. Please solve the captcha.' }),
+        {
+          status: 200,
+          headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
+        }
+      )
     }
 
     const clientIp = req.headers.get('cf-connecting-ip') || req.headers.get('x-real-ip') || '';
@@ -90,22 +95,24 @@ serve(async (req) => {
       },
       body: new URLSearchParams({
         secret: secretKey,
-        response: turnstile_token || '',
+        response: turnstile_token,
         remoteip: clientIp,
       }),
     });
 
     const verification = await siteverifyRes.json();
     if (!verification.success) {
-      console.warn('Turnstile validation failed:', verification);
+      console.warn('[Validation Warn] Turnstile verification failed. Error codes:', verification['error-codes']);
       return new Response(
-        JSON.stringify({ success: false, error: 'Security verification failed. Please try again.' }),
+        JSON.stringify({
+          success: false,
+          error_code: 'TURNSTILE_FAILED',
+          error: 'Human verification failed or expired. Please verify again.',
+          details: verification['error-codes']
+        }),
         {
-          status: 400,
-          headers: {
-            ...getCorsHeaders(req),
-            'Content-Type': 'application/json',
-          },
+          status: 200,
+          headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
         }
       )
     }
@@ -115,15 +122,12 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
 
     if (!supabaseUrl || !supabaseServiceKey) {
-      console.error('Database connection credentials missing.');
+      console.error('[Config Error] Database connection credentials missing.');
       return new Response(
-        JSON.stringify({ success: false, error: 'Server configuration error' }),
+        JSON.stringify({ success: false, error_code: 'SERVER_CONFIG_ERROR', error: 'Server configuration error' }),
         {
           status: 500,
-          headers: {
-            ...getCorsHeaders(req),
-            'Content-Type': 'application/json',
-          },
+          headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
         }
       )
     }
@@ -149,15 +153,12 @@ serve(async (req) => {
     })
 
     if (error) {
-      console.error('Database RPC Error:', error);
+      console.error('[Database Error] submit_booking_request RPC failed:', error.message);
       return new Response(
-        JSON.stringify({ success: false, error: error.message }),
+        JSON.stringify({ success: false, error_code: 'BOOKING_RPC_FAILED', error: error.message }),
         {
-          status: 400,
-          headers: {
-            ...getCorsHeaders(req),
-            'Content-Type': 'application/json',
-          },
+          status: 200,
+          headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
         }
       )
     }
@@ -172,26 +173,36 @@ serve(async (req) => {
       }
     }
 
+    if (result && result.success === false) {
+      console.warn('[Booking Warn] Booking scheduling rejected by database logic:', result.error);
+      return new Response(
+        JSON.stringify({ success: false, error_code: 'BOOKING_RPC_FAILED', error: result.error }),
+        {
+          status: 200,
+          headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
+        }
+      )
+    }
+
+    console.log('[Booking Success] Booking created successfully:', result?.booking_id);
     return new Response(
-      JSON.stringify(result || { success: false, error: 'Empty response from booking database.' }),
+      JSON.stringify({
+        success: true,
+        error_code: 'BOOKING_SUCCESS',
+        booking_id: result?.booking_id
+      }),
       {
         status: 200,
-        headers: {
-          ...getCorsHeaders(req),
-          'Content-Type': 'application/json',
-        },
+        headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
       }
     )
   } catch (err: any) {
-    console.error('Unexpected Edge Function error:', err);
+    console.error('[System Error] Unexpected exception in submit-booking-request function:', err.message);
     return new Response(
-      JSON.stringify({ success: false, error: err.message || 'An unexpected server error occurred.' }),
+      JSON.stringify({ success: false, error_code: 'SERVER_CONFIG_ERROR', error: err.message || 'An unexpected server error occurred.' }),
       {
         status: 500,
-        headers: {
-          ...getCorsHeaders(req),
-          'Content-Type': 'application/json',
-        },
+        headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
       }
     )
   }

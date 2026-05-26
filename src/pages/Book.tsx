@@ -286,8 +286,13 @@ export default function Book() {
         })
       } else {
         // Map backend errors to clean user messages
-        let message = 'An unexpected error occurred while processing your booking. Please try again or contact the parlour.'
-        if (result.error === 'Slot already taken' || result.error === 'Slot is blocked') {
+        let message = result.error || 'An unexpected error occurred while processing your booking. Please try again or contact the parlour.'
+        
+        if (result.error_code === 'TURNSTILE_FAILED') {
+          message = 'Human verification expired or failed. Please verify again.'
+        } else if (result.error_code === 'TURNSTILE_MISSING') {
+          message = 'Human verification token is missing. Please solve the captcha.'
+        } else if (result.error === 'Slot already taken' || result.error === 'Slot is blocked') {
           message = 'Sorry, that time was just taken. Please choose another available time.'
           // Reload slots immediately
           loadSlots(selectedServiceId, selectedDate)
@@ -307,7 +312,7 @@ export default function Book() {
           message = 'Dog age must be between 0 and 40.'
         }
         setSubmitError(message)
-        // Reset turnstile widget on failure
+        // Reset turnstile widget on failure since the token is single-use
         setTurnstileToken(null)
         setTurnstileResetKey(prev => prev + 1)
       }
