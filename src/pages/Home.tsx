@@ -124,7 +124,7 @@ export default function Home() {
     }
 
     return (
-      <div className="space-y-0.5 text-slate-805 leading-normal font-semibold text-xs sm:text-sm">
+      <div className="space-y-0.5 text-slate-900 leading-normal font-semibold text-xs sm:text-sm">
         {lines.map((line, idx) => (
           <p key={idx}>{line}</p>
         ))}
@@ -396,7 +396,7 @@ export default function Home() {
               Find Groomers Dog Parlour in Plumstead, behind Prosper. We’re conveniently located for dog owners in the Cape Town Southern Suburbs.
             </p>
             
-            <div className="pt-2 text-xs text-slate-400 font-bold">
+            <div className="pt-2 text-xs text-slate-500 font-bold">
               <p className="uppercase text-[10px] tracking-wider mb-2">Physical Address:</p>
               <div className="flex items-start gap-1">
                 <MapPin className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
@@ -409,7 +409,7 @@ export default function Home() {
                         onClick={handleCopyAddress}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-750 text-[11px] font-bold rounded-lg transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                       >
-                        <Copy className="w-3.5 h-3.5 text-slate-500" />
+                        <Copy className="w-3.5 h-3.5 text-slate-550" />
                         <span>{copied ? 'Address copied' : 'Copy address'}</span>
                       </button>
                       <a
@@ -418,13 +418,13 @@ export default function Home() {
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-750 hover:text-indigo-700 text-[11px] font-bold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                       >
-                        <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
+                        <ExternalLink className="w-3.5 h-3.5 text-slate-550" />
                         <span>Open in Maps</span>
                       </a>
                     </div>
                   )}
 
-                  <p className="text-[11px] text-slate-500 font-medium italic pt-1.5">
+                  <p className="text-[11px] text-slate-700 font-medium italic pt-1.5">
                     Need help finding us? Contact the parlour and we’ll guide you to the entrance.
                   </p>
                 </div>
