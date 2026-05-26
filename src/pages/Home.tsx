@@ -25,7 +25,12 @@ interface BusinessDetails {
   name: string
   phone: string | null
   email: string | null
-  address?: string | null
+  address_line_1: string | null
+  suburb: string | null
+  city: string | null
+  province: string | null
+  postal_code: string | null
+  country: string | null
 }
 
 export default function Home() {
@@ -44,20 +49,16 @@ export default function Home() {
           .maybeSingle()
 
         if (bizData) {
-          const addressParts = [
-            bizData.address_line_1,
-            bizData.suburb,
-            bizData.city,
-            bizData.province,
-            bizData.postal_code,
-            bizData.country
-          ].filter(Boolean)
-
           setBusiness({
             name: bizData.name,
             phone: bizData.phone,
             email: bizData.email,
-            address: addressParts.join(', ') || null
+            address_line_1: bizData.address_line_1,
+            suburb: bizData.suburb,
+            city: bizData.city,
+            province: bizData.province,
+            postal_code: bizData.postal_code,
+            country: bizData.country
           })
 
           const { data: servicesData } = await supabase
@@ -82,6 +83,43 @@ export default function Home() {
 
   const formatPrice = (cents: number): string => {
     return `R ${(cents / 100).toFixed(2)}`
+  }
+
+  const renderAddress = () => {
+    if (!business) return null
+
+    const line1 = business.address_line_1?.trim()
+    
+    // suburb and city (avoid duplicating if suburb equals city)
+    const suburb = business.suburb?.trim()
+    const city = business.city?.trim()
+    const suburbCityParts = [suburb, city].filter(Boolean)
+    const suburbCity = suburb === city 
+      ? city 
+      : suburbCityParts.join(', ')
+
+    // province and postal code
+    const province = business.province?.trim()
+    const postalCode = business.postal_code?.trim()
+    const provPostalParts = [province, postalCode].filter(Boolean)
+    const provPostal = provPostalParts.join(', ')
+
+    const country = business.country?.trim()
+
+    // Filter out completely empty lines
+    const lines = [line1, suburbCity, provPostal, country].filter(Boolean)
+
+    if (lines.length === 0) {
+      return <p className="text-slate-800 leading-normal font-semibold">Located in Plumstead, Cape Town.</p>
+    }
+
+    return (
+      <div className="space-y-0.5 text-slate-800 leading-normal font-semibold">
+        {lines.map((line, idx) => (
+          <p key={idx}>{line}</p>
+        ))}
+      </div>
+    )
   }
 
   const nearbySuburbs = ["Diep River", "Wynberg", "Constantia", "Kenilworth", "Claremont", "Tokai", "Meadowridge"]
@@ -289,21 +327,25 @@ export default function Home() {
           <h2 className="text-lg font-black tracking-tight text-slate-900 uppercase">Visit Groomers</h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
           <div className="space-y-3">
             <h3 className="font-bold text-slate-900 text-sm">Conveniently Located in Plumstead</h3>
             <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-semibold">
               Our dog parlour is easily accessible for pet owners across the Cape Town Southern Suburbs. We maintain a clean, secure, and professional environment.
             </p>
-            {business?.address && (
-              <div className="pt-2 text-xs font-black text-indigo-950">
-                <p className="uppercase text-[10px] tracking-wider text-slate-400 font-bold mb-1">Physical Address:</p>
-                <p className="flex items-start gap-1">
-                  <MapPin className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
-                  <span className="text-slate-805 leading-normal">{business.address}</span>
-                </p>
+            
+            <div className="pt-2 text-xs text-slate-400 font-bold">
+              <p className="uppercase text-[10px] tracking-wider mb-1">Physical Address:</p>
+              <div className="flex items-start gap-1">
+                <MapPin className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+                <div className="space-y-1.5">
+                  {renderAddress()}
+                  <p className="text-[11px] text-slate-500 font-medium italic pt-1.5">
+                    Need help finding us? Contact the parlour and we’ll guide you to the entrance.
+                  </p>
+                </div>
               </div>
-            )}
+            </div>
           </div>
           <div className="bg-slate-100/50 border border-slate-200 rounded-2xl p-6 flex flex-col justify-center items-center text-center space-y-2 min-h-[160px]">
             <MapPin className="w-10 h-10 text-indigo-300" />
