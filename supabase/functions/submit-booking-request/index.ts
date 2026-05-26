@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 const allowedOrigins = [
   'https://groomersdogparlour.co.za',
+  'https://www.groomersdogparlour.co.za',
   'http://localhost:5173'
 ]
 

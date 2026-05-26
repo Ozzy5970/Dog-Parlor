@@ -75,6 +75,9 @@ export default function Book() {
   const [consentAgreed, setConsentAgreed] = useState(false)
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
   const [turnstileResetKey, setTurnstileResetKey] = useState<number>(0)
+  const [lastSubmitErrorCode, setLastSubmitErrorCode] = useState<string | null>(null)
+  const [hadTokenAtSubmit, setHadTokenAtSubmit] = useState<boolean>(false)
+  const [diagnosticVisible, setDiagnosticVisible] = useState<boolean>(false)
 
   // Helper: compute next likely valid bookable date starting from today
   const getNextValidBookableDateStr = (currentSettings?: BusinessSettings | null) => {
@@ -249,6 +252,9 @@ export default function Book() {
 
     setSubmitting(true)
     setSubmitError('')
+    setLastSubmitErrorCode(null)
+    setHadTokenAtSubmit(!!turnstileToken)
+    setDiagnosticVisible(false)
 
     try {
       const result = await submitBookingRequest({
@@ -312,12 +318,17 @@ export default function Book() {
           message = 'Dog age must be between 0 and 40.'
         }
         setSubmitError(message)
+        setLastSubmitErrorCode(result.error_code || 'UNKNOWN_ERROR')
+        setDiagnosticVisible(true)
         // Reset turnstile widget on failure since the token is single-use
         setTurnstileToken(null)
         setTurnstileResetKey(prev => prev + 1)
       }
     } catch (err: any) {
-      setSubmitError('An unexpected connection error occurred. Please check your internet connection and try again.')
+      const msg = err.message || 'An unexpected connection error occurred. Please check your internet connection and try again.'
+      setSubmitError(msg)
+      setLastSubmitErrorCode('CLIENT_EXCEPTION')
+      setDiagnosticVisible(true)
       // Reset turnstile widget on failure
       setTurnstileToken(null)
       setTurnstileResetKey(prev => prev + 1)
@@ -806,6 +817,16 @@ export default function Book() {
 
           {submitError && (
             <AlertMessage type="error" message={submitError} />
+          )}
+
+          {diagnosticVisible && (
+            <div className="p-4 bg-slate-100 border border-slate-300 rounded-2xl text-[11px] font-mono text-slate-800 space-y-1 animate-fadeIn">
+              <span className="font-extrabold text-[10px] text-slate-500 uppercase tracking-wider block mb-1">System Diagnostic Report</span>
+              <div><span className="font-bold">Error Code:</span> {lastSubmitErrorCode}</div>
+              <div><span className="font-bold">Error Detail:</span> {submitError}</div>
+              <div><span className="font-bold">Token Existed At Submit:</span> {hadTokenAtSubmit ? 'Yes' : 'No'}</div>
+              <div><span className="font-bold">Domain:</span> {window.location.origin}</div>
+            </div>
           )}
 
           <div className="border border-slate-200 rounded-2xl overflow-hidden divide-y divide-slate-150 shadow-xs">

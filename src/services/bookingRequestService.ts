@@ -55,17 +55,38 @@ export async function submitBookingRequest(input: BookingRequestInput): Promise<
       console.error('Edge Function invoke error:', error)
       let message = error.message || 'An unexpected error occurred while verifying details.'
       let error_code = 'SERVER_CONFIG_ERROR'
-      try {
-        const response = (error as any).context
-        if (response && typeof response.json === 'function') {
-          const parsed = await response.json()
-          if (parsed) {
-            if (parsed.error) message = parsed.error
-            if (parsed.error_code) error_code = parsed.error_code
+
+      // Safely attempt to parse response content across different supabase-js error formats
+      const possibleResponses = [
+        (error as any).context,
+        (error as any).response,
+        error
+      ]
+
+      for (const res of possibleResponses) {
+        if (res) {
+          try {
+            let parsed: any = null
+            if (typeof res.json === 'function') {
+              parsed = await res.json()
+            } else if (typeof res.text === 'function') {
+              const text = await res.text()
+              parsed = JSON.parse(text)
+            } else if (typeof res.json === 'string') {
+              parsed = JSON.parse(res.json)
+            } else if (res.error || res.error_code) {
+              parsed = res
+            }
+
+            if (parsed) {
+              if (parsed.error) message = parsed.error
+              if (parsed.error_code) error_code = parsed.error_code
+              break
+            }
+          } catch (_) {
+            // ignore and check next target
           }
         }
-      } catch (_) {
-        // ignore
       }
       return { success: false, error: message, error_code }
     }
@@ -92,5 +113,6 @@ export async function submitBookingRequest(input: BookingRequestInput): Promise<
     return { success: false, error_code: 'SERVER_CONFIG_ERROR', error: err.message || 'An unexpected connection error occurred.' }
   }
 }
+
 
 
