@@ -32,6 +32,8 @@ import {
   addPetToCustomer,
   archivePet,
   updatePetProfile,
+  mergeCustomerHouseholds,
+  mergeCustomerPets,
   type CustomerHistory
 } from '../../services/customerAdminService'
 import { createWhatsAppLink, getGeneralCustomerMessage } from '../../lib/whatsapp'
@@ -77,6 +79,19 @@ export default function Customers() {
   const [editingPet, setEditingPet] = useState<any | null>(null)
   const [addingPet, setAddingPet] = useState(false)
   const [linkingLoading, setLinkingLoading] = useState(false)
+
+  // Household & Shared Pet states
+  const [managingHousehold, setManagingHousehold] = useState<CustomerHistory | null>(null)
+  const [householdMembers, setHouseholdMembers] = useState<any[]>([])
+  const [householdPets, setHouseholdPets] = useState<any[]>([])
+  const [searchQueryLink, setSearchQueryLink] = useState('')
+  const [searchResultsLink, setSearchResultsLink] = useState<CustomerHistory[]>([])
+  const [selectedCustomerToLink, setSelectedCustomerToLink] = useState<CustomerHistory | null>(null)
+  const [targetMembersToLink, setTargetMembersToLink] = useState<any[]>([])
+  const [selectedPrimaryPet, setSelectedPrimaryPet] = useState('')
+  const [selectedDuplicatePet, setSelectedDuplicatePet] = useState('')
+  const [selectedCustomerHouseholdMembers, setSelectedCustomerHouseholdMembers] = useState<any[]>([])
+
 
   // Local forms state (inside unified modal)
   const [customerForm, setCustomerForm] = useState({
@@ -155,6 +170,168 @@ export default function Customers() {
         }
       })
   }, [profile])
+
+  const loadHouseholdData = async (householdId: string | null, customerId: string) => {
+    if (!householdId) {
+      const currentCust = customers.find(c => c.id === customerId)
+      setHouseholdMembers(currentCust ? [currentCust] : [])
+      setHouseholdPets(currentCust?.pets?.filter(p => p.is_active) || [])
+      return
+    }
+    try {
+      const { data: members, error: memErr } = await supabase
+        .from('customers')
+        .select('id, full_name, surname, phone, household_id')
+        .eq('household_id', householdId)
+        .eq('business_id', profile?.business_id)
+
+      if (memErr) throw memErr
+      setHouseholdMembers(members || [])
+
+      const { data: pets, error: petErr } = await supabase
+        .from('pets')
+        .select('id, name, breed, size, species, is_active, customer_id, household_id')
+        .eq('household_id', householdId)
+        .eq('is_active', true)
+        .eq('business_id', profile?.business_id)
+
+      if (petErr) throw petErr
+      setHouseholdPets(pets || [])
+    } catch (err) {
+      console.error('Error loading household data:', err)
+    }
+  }
+
+  useEffect(() => {
+    if (managingHousehold) {
+      loadHouseholdData(managingHousehold.household_id, managingHousehold.id)
+    }
+  }, [managingHousehold, customers])
+
+  useEffect(() => {
+    if (selectedCustomer && selectedCustomer.household_id) {
+      supabase
+        .from('customers')
+        .select('id, full_name, surname, phone')
+        .eq('household_id', selectedCustomer.household_id)
+        .eq('business_id', profile?.business_id)
+        .then(({ data }) => {
+          setSelectedCustomerHouseholdMembers(data || [])
+        })
+    } else {
+      setSelectedCustomerHouseholdMembers([])
+    }
+  }, [selectedCustomerId, selectedCustomer?.household_id, profile])
+
+  const handleLinkSearch = async (query: string) => {
+    setSearchQueryLink(query)
+    if (query.trim().length < 2) {
+      setSearchResultsLink([])
+      return
+    }
+    try {
+      const data = await searchCustomers(profile?.business_id || '', query)
+      const filtered = data.filter(c => c.id !== selectedCustomerId && (!selectedCustomer?.household_id || c.household_id !== selectedCustomer?.household_id))
+      setSearchResultsLink(filtered)
+    } catch (err) {
+      console.error('Error searching customers to link:', err)
+    }
+  }
+
+  const handleSelectCustomerToLink = async (cust: CustomerHistory) => {
+    setSelectedCustomerToLink(cust)
+    if (cust.household_id) {
+      try {
+        const { data, error } = await supabase
+          .from('customers')
+          .select('id, full_name, surname')
+          .eq('household_id', cust.household_id)
+          .neq('id', cust.id)
+        if (error) throw error
+        setTargetMembersToLink(data || [])
+      } catch (err) {
+        console.error(err)
+        setTargetMembersToLink([])
+      }
+    } else {
+      setTargetMembersToLink([])
+    }
+  }
+
+  const handleLinkCustomerSubmit = async () => {
+    if (!selectedCustomer || !selectedCustomerToLink) return
+    try {
+      setLinkingLoading(true)
+      setModalError(null)
+      const res = await mergeCustomerHouseholds(selectedCustomer.id, selectedCustomerToLink.id)
+      if (!res.success) {
+        setModalError(res.error || 'Failed to link household.')
+        return
+      }
+      
+      const bid = profile?.business_id
+      if (bid) {
+        const data = await searchCustomers(bid, searchQuery)
+        setCustomers(data)
+        const updated = data.find(c => c.id === selectedCustomer?.id)
+        if (updated) {
+          setManagingHousehold(updated)
+        }
+      }
+      
+      setSelectedCustomerToLink(null)
+      setTargetMembersToLink([])
+      setSearchQueryLink('')
+      setSearchResultsLink([])
+      setSuccessMsg('Households linked successfully.')
+    } catch (err: any) {
+      console.error(err)
+      setModalError(err.message || 'Failed to link household.')
+    } finally {
+      setLinkingLoading(false)
+    }
+  }
+
+  const handleMergePetsSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedPrimaryPet || !selectedDuplicatePet) return
+
+    const confirmed = window.confirm(
+      'Bookings for the duplicate pet will move to the selected pet. The original customer on each booking will stay unchanged.'
+    )
+    if (!confirmed) return
+
+    try {
+      setLinkingLoading(true)
+      setModalError(null)
+      const res = await mergeCustomerPets(selectedPrimaryPet, [selectedDuplicatePet])
+      if (!res.success) {
+        setModalError(res.error || 'Failed to merge pets.')
+        return
+      }
+
+      setSuccessMsg('Pets marked as the same animal and booking histories consolidated successfully.')
+      
+      const bid = profile?.business_id
+      if (bid) {
+        const data = await searchCustomers(bid, searchQuery)
+        setCustomers(data)
+        const updated = data.find(c => c.id === selectedCustomer?.id)
+        if (updated) {
+          setManagingHousehold(updated)
+        }
+      }
+      
+      setSelectedPrimaryPet('')
+      setSelectedDuplicatePet('')
+    } catch (err: any) {
+      console.error(err)
+      setModalError(err.message || 'Failed to merge pets.')
+    } finally {
+      setLinkingLoading(false)
+    }
+  }
+
 
   // Trigger search
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -519,6 +696,21 @@ export default function Customers() {
                       </span>
                     )}
                     <button
+                      onClick={() => {
+                        setModalError(null)
+                        setSelectedCustomerToLink(null)
+                        setTargetMembersToLink([])
+                        setSearchQueryLink('')
+                        setSearchResultsLink([])
+                        setSelectedPrimaryPet('')
+                        setSelectedDuplicatePet('')
+                        setManagingHousehold(selectedCustomer)
+                      }}
+                      className="flex items-center space-x-1.5 py-1 px-3 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-lg transition-all cursor-pointer border border-slate-200"
+                    >
+                      <span>Manage household</span>
+                    </button>
+                    <button
                       onClick={() => setEditingCustomer(selectedCustomer)}
                       className="flex items-center space-x-1.5 py-1 px-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-lg transition-all cursor-pointer border border-indigo-150"
                     >
@@ -631,6 +823,28 @@ export default function Customers() {
                         )}
                       </div>
                     </div>
+
+                    {/* Linked Household Members */}
+                    {selectedCustomer.household_id && (
+                      <div className="space-y-1.5">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Linked Household Members</span>
+                        <div className="bg-slate-50 border border-slate-150 p-3 rounded-xl text-xs space-y-1.5">
+                          {selectedCustomerHouseholdMembers.length > 1 ? (
+                            <div className="space-y-1">
+                              {selectedCustomerHouseholdMembers
+                                .filter(m => m.id !== selectedCustomer.id)
+                                .map(m => (
+                                  <div key={m.id} className="font-bold text-slate-700">
+                                    {m.full_name} {m.surname || ''} <span className="font-normal text-slate-450">({m.phone})</span>
+                                  </div>
+                                ))}
+                            </div>
+                          ) : (
+                            <p className="text-slate-500 font-bold">No other customer profiles linked.</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
 
                   </div>
 
@@ -1251,6 +1465,250 @@ export default function Customers() {
           </div>
         </div>
       )}
+
+      {/* ========================================================================= */}
+      {/* 4. Modal: Manage Household */}
+      {/* ========================================================================= */}
+      {managingHousehold && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 overflow-y-auto animate-fadeIn">
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-xl max-w-2xl w-full overflow-hidden p-6 space-y-5">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <h3 className="font-black text-slate-900 text-base">Manage household</h3>
+              <button 
+                onClick={() => setManagingHousehold(null)} 
+                className="text-slate-400 hover:text-slate-650 p-1.5 hover:bg-slate-50 rounded-xl cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {modalError && <AlertMessage type="error" message={modalError} />}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-h-[70vh] overflow-y-auto pr-1">
+              
+              {/* Left Column: Current Members & Link Customer */}
+              <div className="space-y-4">
+                {/* Household Members */}
+                <div className="space-y-2">
+                  <span className="text-[10px] font-black text-indigo-650 uppercase tracking-wider block border-b border-slate-100 pb-1">
+                    Household Members
+                  </span>
+                  <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1">
+                    {householdMembers.map(m => (
+                      <div key={m.id} className="p-3 bg-slate-50 border border-slate-150 rounded-xl flex items-center justify-between text-xs font-semibold">
+                        <div>
+                          <p className="font-extrabold text-slate-850">
+                            {m.full_name} {m.surname || ''}
+                            {m.id === managingHousehold.id && (
+                              <span className="ml-1.5 px-2 py-0.5 bg-indigo-50 border border-indigo-150 text-indigo-700 text-[9px] font-black rounded-md uppercase">
+                                Active
+                              </span>
+                            )}
+                          </p>
+                          <p className="text-slate-550 font-normal text-[10px] mt-0.5">{m.phone}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Link Customer Search */}
+                <div className="space-y-2 pt-2">
+                  <span className="text-[10px] font-black text-indigo-650 uppercase tracking-wider block border-b border-slate-100 pb-1">
+                    Link customer
+                  </span>
+                  
+                  {!selectedCustomerToLink ? (
+                    <div className="space-y-2">
+                      <div className="relative">
+                        <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none">
+                          <Search className="w-3.5 h-3.5" />
+                        </span>
+                        <input
+                          type="text"
+                          placeholder="Search customer to link by name..."
+                          value={searchQueryLink}
+                          onChange={e => handleLinkSearch(e.target.value)}
+                          className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-xs font-semibold text-slate-800 bg-white"
+                        />
+                      </div>
+                      
+                      {searchResultsLink.length > 0 && (
+                        <div className="border border-slate-200 rounded-xl bg-white divide-y divide-slate-100 max-h-[140px] overflow-y-auto shadow-sm">
+                          {searchResultsLink.map(c => (
+                            <div
+                              key={c.id}
+                              onClick={() => handleSelectCustomerToLink(c)}
+                              className="p-2.5 hover:bg-slate-50 cursor-pointer text-xs font-semibold flex items-center justify-between"
+                            >
+                              <div>
+                                <p className="text-slate-800">{c.full_name} {c.surname || ''}</p>
+                                <p className="text-slate-400 text-[10px]">{c.phone}</p>
+                              </div>
+                              <ChevronRight className="w-3 h-3 text-slate-300" />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="p-3 border border-indigo-155 bg-indigo-50/10 rounded-xl space-y-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="text-xs font-black text-slate-800">
+                            Selected: {selectedCustomerToLink.full_name} {selectedCustomerToLink.surname || ''}
+                          </p>
+                          <p className="text-[10px] text-slate-400 font-semibold">{selectedCustomerToLink.phone}</p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setSelectedCustomerToLink(null)
+                            setTargetMembersToLink([])
+                          }}
+                          className="text-slate-400 hover:text-slate-650 p-1 hover:bg-slate-100 rounded-lg cursor-pointer"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+
+                      <div className="p-3 bg-amber-50/40 border border-amber-200 rounded-lg text-[11px] leading-relaxed text-amber-900 font-semibold">
+                        {targetMembersToLink.length > 0 ? (
+                          <span>
+                            This will link the entire selected household, including{' '}
+                            <strong>
+                              {targetMembersToLink
+                                .map(m => `${m.full_name} ${m.surname || ''}`.trim())
+                                .join(', ')}
+                            </strong>
+                            , under this household. Their customer profiles and booking history will remain separate.
+                          </span>
+                        ) : (
+                          <span>
+                            This will link both customers under one household. Their bookings and contact details will remain separate.
+                          </span>
+                        )}
+                      </div>
+
+                      <button
+                        onClick={handleLinkCustomerSubmit}
+                        disabled={linkingLoading}
+                        className="w-full py-2 bg-indigo-650 hover:bg-indigo-700 text-white font-bold rounded-xl flex items-center justify-center space-x-1.5 cursor-pointer shadow-xs text-xs"
+                      >
+                        {linkingLoading ? <Loader2 className="w-4.5 h-4.5 animate-spin" /> : <span>Link customer</span>}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Right Column: Shared Pets & Mark as Same Pet */}
+              <div className="space-y-4 border-t md:border-t-0 md:border-l border-slate-100 pt-4 md:pt-0 md:pl-6">
+                
+                {/* Shared Pets list */}
+                <div className="space-y-2">
+                  <span className="text-[10px] font-black text-indigo-650 uppercase tracking-wider block border-b border-slate-100 pb-1">
+                    Shared pets
+                  </span>
+                  
+                  {householdPets.length === 0 ? (
+                    <div className="text-slate-500 text-xs italic py-2">
+                      No active pets in this household.
+                    </div>
+                  ) : (
+                    <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1">
+                      {householdPets.map(p => (
+                        <div key={p.id} className="p-2.5 bg-slate-50 border border-slate-150 rounded-xl flex items-center justify-between text-xs font-semibold">
+                          <div className="min-w-0">
+                            <p className="font-extrabold text-slate-850 truncate flex items-center gap-1">
+                              <Dog className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                              <span>{p.name}</span>
+                              <span className="text-[9px] text-slate-450 font-normal bg-slate-100 px-1 py-0.1 rounded-md capitalize shrink-0 ml-1">
+                                {p.species}
+                              </span>
+                            </p>
+                            <p className="text-slate-450 text-[10px] font-normal truncate">
+                              Breed: {p.breed || 'Unknown'} • Size: {p.size || 'Medium'}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Mark as Same Pet consolidation form */}
+                {householdPets.length > 1 && (
+                  <div className="bg-slate-50/50 p-4 border border-slate-150 rounded-2xl space-y-3 pt-3">
+                    <h4 className="font-extrabold text-slate-855 text-xs flex items-center gap-1.5">
+                      <Dog className="w-3.5 h-3.5 text-indigo-500" />
+                      <span>Consolidate duplicates</span>
+                    </h4>
+                    
+                    <form onSubmit={handleMergePetsSubmit} className="space-y-3 text-xs font-semibold">
+                      <div className="space-y-2.5">
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-bold text-slate-600 uppercase">Primary pet (Keep)</label>
+                          <select
+                            value={selectedPrimaryPet}
+                            onChange={e => setSelectedPrimaryPet(e.target.value)}
+                            className="w-full p-2.5 border border-slate-200 bg-white rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-slate-800"
+                          >
+                            <option value="">Select primary pet...</option>
+                            {householdPets.map(p => (
+                              <option key={p.id} value={p.id}>
+                                {p.name} ({p.breed || 'Unknown breed'})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-bold text-slate-600 uppercase">Duplicate pet (Merge)</label>
+                          <select
+                            value={selectedDuplicatePet}
+                            onChange={e => setSelectedDuplicatePet(e.target.value)}
+                            disabled={!selectedPrimaryPet}
+                            className="w-full p-2.5 border border-slate-200 bg-white rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-slate-800 disabled:opacity-50"
+                          >
+                            <option value="">Select duplicate pet...</option>
+                            {householdPets
+                              .filter(p => p.id !== selectedPrimaryPet)
+                              .map(p => (
+                                <option key={p.id} value={p.id}>
+                                  {p.name} ({p.breed || 'Unknown breed'})
+                                </option>
+                              ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={!selectedPrimaryPet || !selectedDuplicatePet || linkingLoading}
+                        className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl flex items-center justify-center space-x-1.5 cursor-pointer shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {linkingLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <span>Mark as same pet</span>}
+                      </button>
+                    </form>
+                  </div>
+                )}
+              </div>
+
+            </div>
+
+            <div className="flex items-center justify-end pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setManagingHousehold(null)}
+                className="px-6 py-2 border border-slate-250 hover:bg-slate-50 text-slate-655 font-bold rounded-xl cursor-pointer text-xs"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
+

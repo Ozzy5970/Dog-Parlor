@@ -391,3 +391,59 @@ export async function searchCustomers(
 
   return (directData || []) as unknown as CustomerHistory[]
 }
+
+/**
+ * Links/merges households of two customers.
+ */
+export async function mergeCustomerHouseholds(
+  primaryCustomerId: string,
+  secondaryCustomerId: string
+): Promise<{ success: boolean; primary_household_id?: string; error?: string }> {
+  const { data, error } = await supabase.rpc('merge_customer_households', {
+    p_primary_cust_id: primaryCustomerId,
+    p_secondary_cust_id: secondaryCustomerId
+  })
+
+  if (error) {
+    return { success: false, error: error.message }
+  }
+
+  const result = data as { success: boolean; primary_household_id?: string; error?: string; message?: string }
+  if (result && !result.success) {
+    return { success: false, error: result.error }
+  }
+
+  return {
+    success: true,
+    primary_household_id: result.primary_household_id
+  }
+}
+
+/**
+ * Merges duplicate pets under the same household/owner.
+ */
+export async function mergeCustomerPets(
+  primaryPetId: string,
+  duplicatePetIds: string[]
+): Promise<{ success: boolean; archived_count?: number; bookings_updated?: number; error?: string }> {
+  const { data, error } = await supabase.rpc('merge_customer_pets', {
+    p_primary_pet_id: primaryPetId,
+    p_duplicate_pet_ids: duplicatePetIds
+  })
+
+  if (error) {
+    return { success: false, error: error.message }
+  }
+
+  const result = data as { success: boolean; archived_count?: number; bookings_updated?: number; error?: string }
+  if (result && !result.success) {
+    return { success: false, error: result.error }
+  }
+
+  return {
+    success: true,
+    archived_count: result.archived_count,
+    bookings_updated: result.bookings_updated
+  }
+}
+
