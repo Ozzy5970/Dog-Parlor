@@ -25,7 +25,7 @@ import {
   LoadingState
 } from '../../components/UI'
 import { fetchServices, type Service } from '../../services/serviceService'
-import { checkAvailability, type AvailableSlot } from '../../services/availabilityService'
+import { checkAdminAvailability, type AvailableSlot } from '../../services/availabilityService'
 import { adminSubmitBooking } from '../../services/manualBookingService'
 import { utcToLocalTimeParts } from '../../lib/dateTime'
 import { supabase } from '../../lib/supabase'
@@ -242,7 +242,7 @@ export default function NewBooking() {
         setSlotsError(null)
         setSelectedSlot(null)
         
-        const res = await checkAvailability(profile!.business_id, selectedService!.id, selectedDate)
+        const res = await checkAdminAvailability(profile!.business_id, selectedService!.id, selectedDate)
         
         if (res.reason) {
           setSlotsError(res.reason)
@@ -334,7 +334,7 @@ export default function NewBooking() {
       if (selectedService && selectedDate) {
         setLoadingSlots(true)
         try {
-          const res = await checkAvailability(profile.business_id, selectedService.id, selectedDate)
+          const res = await checkAdminAvailability(profile.business_id, selectedService.id, selectedDate)
           if (!res.reason) setSlots(res.slots)
         } catch (e) {
           console.error(e)
@@ -595,25 +595,33 @@ export default function NewBooking() {
                     <p className="text-[11px] text-slate-400 mt-1">All slots might be fully booked or the business is closed on this date.</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-[300px] overflow-y-auto pr-1">
-                    {slots.map((slot) => {
-                      const isSelected = selectedSlot?.start_time === slot.start_time
-                      return (
-                        <button
-                          key={slot.start_time}
-                          type="button"
-                          onClick={() => setSelectedSlot(slot)}
-                          className={`py-2 border text-xs font-bold rounded-xl text-center transition-all cursor-pointer ${
-                            isSelected
-                              ? 'bg-indigo-600 border-indigo-600 text-white shadow-xs'
-                              : 'bg-white border-slate-200 hover:border-slate-300 text-slate-700'
-                          }`}
-                        >
-                          {slot.label}
-                        </button>
-                      )
-                    })}
-                  </div>
+                  <>
+                    <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-[300px] overflow-y-auto pr-1">
+                      {slots.map((slot) => {
+                        const isSelected = selectedSlot?.start_time === slot.start_time
+                        return (
+                          <button
+                            key={slot.start_time}
+                            type="button"
+                            onClick={() => setSelectedSlot(slot)}
+                            className={`py-2 border text-xs font-bold rounded-xl text-center transition-all cursor-pointer ${
+                              isSelected
+                                ? 'bg-indigo-600 border-indigo-600 text-white shadow-xs'
+                                : 'bg-white border-slate-200 hover:border-slate-300 text-slate-700'
+                            }`}
+                          >
+                            {slot.label}
+                          </button>
+                        )
+                      })}
+                    </div>
+                    {selectedSlot && new Date(selectedSlot.start_time) < new Date() && (
+                      <div className="p-3 bg-amber-50 border border-amber-250 text-amber-800 rounded-xl text-[11px] font-bold flex items-center space-x-1.5 mt-3 animate-fadeIn">
+                        <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                        <span>Warning: Selected slot starts in the past. Verify customer is ready.</span>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -1001,6 +1009,12 @@ export default function NewBooking() {
                     <div>
                       <p className="text-[10px] text-slate-500 font-semibold italic">Timezone: {settings.timezone}</p>
                     </div>
+                    {selectedSlot && new Date(selectedSlot.start_time) < new Date() && (
+                      <div className="p-3 bg-amber-50 border border-amber-250 text-amber-800 rounded-xl text-[11px] font-bold flex items-center space-x-1.5 mt-2 animate-fadeIn">
+                        <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                        <span>Warning: Selected slot starts in the past. Verify customer is ready.</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

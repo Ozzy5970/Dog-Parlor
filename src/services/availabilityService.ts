@@ -75,3 +75,64 @@ export async function checkAvailability(
   }
 }
 
+/**
+ * Calculates all available booking start times for admin users.
+ * Uses 10-minute intervals and allows immediate same-day bookings.
+ * 
+ * @param businessId Unique ID of the parlour business.
+ * @param serviceId Unique ID of the service being booked.
+ * @param selectedDate Target booking date formatted as "YYYY-MM-DD" local to the parlour.
+ */
+export async function checkAdminAvailability(
+  businessId: string,
+  serviceId: string,
+  selectedDate: string
+): Promise<AvailabilityResult> {
+  // Validate date input string format
+  if (!selectedDate || !/^\d{4}-\d{2}-\d{2}$/.test(selectedDate)) {
+    return { slots: [], reason: 'Invalid date format. Expected YYYY-MM-DD.' }
+  }
+
+  try {
+    const { data, error } = await supabase.rpc('get_admin_available_slots', {
+      p_business_id: businessId,
+      p_service_id: serviceId,
+      p_date: selectedDate,
+    })
+
+    if (error) throw error
+
+    // Cast and parse response from RPC JSON payload
+    let result = data
+    if (typeof result === 'string') {
+      try {
+        result = JSON.parse(result)
+      } catch (e) {
+        // Fallback
+      }
+    }
+
+    if (!result || typeof result !== 'object') {
+      return { slots: [], reason: 'Invalid response from availability service.' }
+    }
+
+    const slots = Array.isArray(result.slots) ? result.slots : []
+
+    return {
+      slots: slots.map((s: any) => ({
+        start_time: s.start_time,
+        end_time: s.end_time,
+        label: s.label,
+        disabled: !!s.disabled,
+      })),
+      reason: result.reason || undefined,
+      hasFullDayClosure: !!result.hasFullDayClosure,
+      hasPartialClosure: !!result.hasPartialClosure,
+    }
+  } catch (err: any) {
+    console.error('[availabilityService] Error checking admin availability:', err)
+    return { slots: [], reason: err.message || 'Failed to calculate available slots.' }
+  }
+}
+
+
