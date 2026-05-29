@@ -317,7 +317,7 @@ export default function Home() {
                   className={`bg-white rounded-2xl shadow-xs border border-slate-200/80 p-5 flex flex-col justify-between hover:border-indigo-200 hover:shadow-md hover:-translate-y-1 transition-all duration-200 reveal ${delayClass}`}
                 >
                 <div className="space-y-3">
-                  <div className="flex justify-between items-start">
+                  <div className="flex justify-between items-start gap-2">
                     <h3 className="font-extrabold text-slate-900 text-sm leading-tight capitalize">
                       {service.name}
                     </h3>

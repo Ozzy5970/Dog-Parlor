@@ -47,41 +47,40 @@ export default function BookingSuccess() {
       </p>
 
       {bookingDetails ? (
-        <div className="w-full bg-slate-50/50 border border-slate-200/80 rounded-2xl p-6 text-left mb-8 shadow-xs space-y-4">
+        <div className="w-full bg-slate-50/50 border border-slate-200/80 rounded-2xl p-4 sm:p-6 text-left mb-8 shadow-xs space-y-4">
           <h2 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 font-sans border-b border-slate-250 pb-2">
             Booking Summary
           </h2>
-          
-          <div className="space-y-3 font-sans text-sm">
-            <div className="flex justify-between items-start">
-              <span className="text-slate-500 font-medium flex items-center gap-1.5">
+          <div className="space-y-4 font-sans text-sm">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1 sm:gap-4">
+              <span className="text-slate-500 font-medium flex items-center gap-1.5 shrink-0">
                 <Tag className="w-4 h-4 text-slate-400" /> Service
               </span>
-              <span className="font-bold text-slate-800 text-right">{bookingDetails.serviceName}</span>
+              <span className="font-bold text-slate-800 text-left sm:text-right">{bookingDetails.serviceName}</span>
             </div>
-            <div className="flex justify-between items-start">
-              <span className="text-slate-500 font-medium flex items-center gap-1.5">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1 sm:gap-4">
+              <span className="text-slate-500 font-medium flex items-center gap-1.5 shrink-0">
                 <Calendar className="w-4 h-4 text-slate-400" /> Date
               </span>
-              <span className="font-bold text-slate-800 text-right">{formatDateFriendly(bookingDetails.dateStr)}</span>
+              <span className="font-bold text-slate-800 text-left sm:text-right">{formatDateFriendly(bookingDetails.dateStr)}</span>
             </div>
-            <div className="flex justify-between items-start">
-              <span className="text-slate-500 font-medium flex items-center gap-1.5">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1 sm:gap-4">
+              <span className="text-slate-500 font-medium flex items-center gap-1.5 shrink-0">
                 <Clock className="w-4 h-4 text-slate-400" /> Requested Time
               </span>
-              <span className="font-extrabold text-indigo-600 text-right">{bookingDetails.timeStr}</span>
+              <span className="font-extrabold text-indigo-600 text-left sm:text-right">{bookingDetails.timeStr}</span>
             </div>
-            <div className="flex justify-between items-start border-t border-slate-200/60 pt-3">
-              <span className="text-slate-500 font-medium flex items-center gap-1.5">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1 sm:gap-4 border-t border-slate-200/60 pt-3">
+              <span className="text-slate-500 font-medium flex items-center gap-1.5 shrink-0">
                 <PawPrint className="w-4 h-4 text-slate-400" /> Pet Name
               </span>
-              <span className="font-bold text-slate-800">{bookingDetails.petName}</span>
+              <span className="font-bold text-slate-800 text-left sm:text-right">{bookingDetails.petName}</span>
             </div>
-            <div className="flex justify-between items-start">
-              <span className="text-slate-500 font-medium flex items-center gap-1.5">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1 sm:gap-4">
+              <span className="text-slate-500 font-medium flex items-center gap-1.5 shrink-0">
                 <User className="w-4 h-4 text-slate-400" /> Owner Name
               </span>
-              <span className="font-bold text-slate-800">{bookingDetails.customerName}</span>
+              <span className="font-bold text-slate-800 text-left sm:text-right">{bookingDetails.customerName}</span>
             </div>
           </div>
         </div>

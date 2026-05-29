@@ -385,11 +385,11 @@ export default function Book() {
     <div className="max-w-2xl mx-auto py-4">
       {/* Wizard Progress Header */}
       <div className="mb-10">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
             Book Appointment
           </h1>
-          <span className="text-[11px] font-bold text-indigo-650 bg-indigo-50 px-3 py-1 rounded-full uppercase tracking-wider">
+          <span className="self-start sm:self-auto text-[11px] font-bold text-indigo-650 bg-indigo-50 px-3 py-1 rounded-full uppercase tracking-wider">
             Step {step} of 4
           </span>
         </div>
@@ -404,7 +404,7 @@ export default function Book() {
             <button
               onClick={() => step > 1 && setStep(1)}
               disabled={step === 1}
-              className={`flex h-10 w-10 items-center justify-center rounded-full border transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 ${
+              className={`flex h-11 w-11 items-center justify-center rounded-full border transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 ${
                 step >= 1
                   ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm'
                   : 'bg-white border-slate-200 text-slate-400'
@@ -418,7 +418,7 @@ export default function Book() {
             <button
               onClick={() => step > 2 && setStep(2)}
               disabled={step <= 2 || !selectedServiceId}
-              className={`flex h-10 w-10 items-center justify-center rounded-full border transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 ${
+              className={`flex h-11 w-11 items-center justify-center rounded-full border transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 ${
                 step >= 2
                   ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm'
                   : 'bg-white border-slate-200 text-slate-400'
@@ -432,7 +432,7 @@ export default function Book() {
             <button
               onClick={() => step > 3 && setStep(3)}
               disabled={step <= 3 || !selectedServiceId || !selectedDate || !selectedSlot}
-              className={`flex h-10 w-10 items-center justify-center rounded-full border transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 ${
+              className={`flex h-11 w-11 items-center justify-center rounded-full border transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 ${
                 step >= 3
                   ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm'
                   : 'bg-white border-slate-200 text-slate-400'
@@ -444,7 +444,7 @@ export default function Book() {
 
             {/* Step 4 Indicator */}
             <div
-              className={`flex h-10 w-10 items-center justify-center rounded-full border transition-all duration-150 ${
+              className={`flex h-11 w-11 items-center justify-center rounded-full border transition-all duration-150 ${
                 step === 4
                   ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm'
                   : 'bg-white border-slate-200 text-slate-400'
@@ -492,7 +492,7 @@ export default function Book() {
                   }`}
                 >
                   <div className="space-y-1 flex-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <h3 className="font-extrabold text-slate-950 text-base leading-snug">{service.name}</h3>
                       {service.dog_size && (
                         <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-md">
@@ -512,7 +512,7 @@ export default function Book() {
                       </span>
                     </div>
                   </div>
-                  <div className="text-right self-end md:self-center shrink-0">
+                  <div className="text-left md:text-right self-start md:self-center shrink-0">
                     <span className="text-xl font-black text-slate-900">
                       R {(service.price_cents / 100).toFixed(2)}
                     </span>
@@ -566,10 +566,13 @@ export default function Book() {
               </span>
               
               {loadingSlots ? (
-                <div className="space-y-2 py-4">
-                  <div className="h-9 bg-slate-100 rounded-lg animate-pulse"></div>
-                  <div className="h-9 bg-slate-100 rounded-lg animate-pulse"></div>
-                  <div className="h-9 bg-slate-100 rounded-lg animate-pulse"></div>
+                <div className="grid grid-cols-2 min-[400px]:grid-cols-3 md:grid-cols-2 lg:grid-cols-3 gap-2 py-2">
+                  <div className="h-9 bg-slate-100/80 rounded-xl animate-pulse"></div>
+                  <div className="h-9 bg-slate-100/80 rounded-xl animate-pulse"></div>
+                  <div className="h-9 bg-slate-100/80 rounded-xl animate-pulse"></div>
+                  <div className="h-9 bg-slate-100/80 rounded-xl animate-pulse"></div>
+                  <div className="h-9 bg-slate-100/80 rounded-xl animate-pulse"></div>
+                  <div className="h-9 bg-slate-100/80 rounded-xl animate-pulse"></div>
                 </div>
               ) : slotsError ? (
                 <AlertMessage type="warning" message={slotsError} />
@@ -590,13 +593,13 @@ export default function Book() {
                       <span>Limited availability on this date. Some times are unavailable.</span>
                     </div>
                   )}
-                  <div className="grid grid-cols-3 gap-2 max-h-[220px] overflow-y-auto pr-1">
+                  <div className="grid grid-cols-2 min-[400px]:grid-cols-3 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-[220px] overflow-y-auto pr-1">
                     {slots.map((slot) => (
                       <button
                         key={slot.start_time}
                         type="button"
                         onClick={() => setSelectedSlot(slot)}
-                        className={`py-2 px-3 text-xs font-bold rounded-xl border text-center transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/20 ${
+                        className={`py-2.5 sm:py-2 px-3 text-xs font-bold rounded-xl border text-center transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/20 ${
                           selectedSlot?.start_time === slot.start_time
                             ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm ring-1 ring-indigo-600'
                             : 'bg-white border-slate-200 text-slate-700 hover:border-indigo-400 hover:bg-indigo-50/30'
@@ -611,11 +614,11 @@ export default function Book() {
             </div>
           </div>
 
-          <div className="flex justify-between pt-6 border-t border-slate-200/60">
+          <div className="flex flex-col-reverse sm:flex-row justify-between gap-3 pt-6 border-t border-slate-200/60">
             <button
               type="button"
               onClick={() => setStep(1)}
-              className="px-5 py-2.5 border border-slate-200 hover:border-slate-350 rounded-xl text-slate-600 font-bold hover:bg-slate-50 transition-colors cursor-pointer text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              className="w-full sm:w-auto px-5 py-3 sm:py-2.5 border border-slate-200 hover:border-slate-350 rounded-xl text-slate-600 font-bold hover:bg-slate-50 transition-colors cursor-pointer text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
             >
               Back
             </button>
@@ -623,7 +626,7 @@ export default function Book() {
               type="button"
               disabled={!selectedDate || !selectedSlot || loadingSlots}
               onClick={() => setStep(3)}
-              className="px-5 py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm cursor-pointer text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              className="w-full sm:w-auto justify-center px-5 py-3 sm:py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm cursor-pointer text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
             >
               Continue
             </button>
@@ -642,7 +645,7 @@ export default function Book() {
           </div>
 
           <form onSubmit={(e) => { e.preventDefault(); setStep(4); }} className="space-y-5">
-            <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-200/80 space-y-4">
+            <div className="bg-slate-50/50 p-4 sm:p-5 rounded-2xl border border-slate-200/80 space-y-4">
               <h3 className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 border-b border-slate-200/60 pb-2">Owner Information</h3>
               <div className="grid gap-4 sm:grid-cols-2">
                 <FormField label="First Name" htmlFor="owner-name" required>
@@ -699,7 +702,7 @@ export default function Book() {
               </FormField>
             </div>
 
-            <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-200/80 space-y-4">
+            <div className="bg-slate-50/50 p-4 sm:p-5 rounded-2xl border border-slate-200/80 space-y-4">
               <h3 className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 border-b border-slate-200/60 pb-2">Pet Information</h3>
               <div className="grid gap-4 sm:grid-cols-2">
                 <FormField label="Pet Name" htmlFor="pet-name" required>
@@ -771,7 +774,7 @@ export default function Book() {
               </div>
             </div>
 
-            <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-200/80 space-y-2">
+            <div className="bg-slate-50/50 p-4 sm:p-5 rounded-2xl border border-slate-200/80 space-y-2">
               <FormField label="Special Instructions / Booking Notes" htmlFor="customer-notes" optionalText="Optional">
                 <textarea
                   id="customer-notes"
@@ -785,18 +788,18 @@ export default function Book() {
               </FormField>
             </div>
 
-            <div className="flex justify-between pt-6 border-t border-slate-200/60">
+            <div className="flex flex-col-reverse sm:flex-row justify-between gap-3 pt-6 border-t border-slate-200/60">
               <button
                 type="button"
                 onClick={() => setStep(2)}
-                className="px-5 py-2.5 border border-slate-200 hover:border-slate-350 rounded-xl text-slate-600 font-bold hover:bg-slate-50 transition-colors cursor-pointer text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                className="w-full sm:w-auto px-5 py-3 sm:py-2.5 border border-slate-200 hover:border-slate-350 rounded-xl text-slate-650 font-bold hover:bg-slate-50 transition-colors cursor-pointer text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
               >
                 Back
               </button>
               <button
                 type="submit"
                 disabled={!fullName.trim() || !normalizeSaPhone(phone) || !petName.trim() || (petAge !== '' && (parseFloat(petAge) < 0 || parseFloat(petAge) > 40))}
-                className="px-5 py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm cursor-pointer text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                className="w-full sm:w-auto justify-center px-5 py-3 sm:py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm cursor-pointer text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
               >
                 Review Booking
               </button>
@@ -831,7 +834,7 @@ export default function Book() {
 
           <div className="border border-slate-200 rounded-2xl overflow-hidden divide-y divide-slate-150 shadow-xs">
             {/* Service & Time */}
-            <div className="p-5 bg-indigo-50/15 grid gap-4 sm:grid-cols-2">
+            <div className="p-4 sm:p-5 bg-indigo-50/15 grid gap-4 sm:grid-cols-2">
               <div className="space-y-1">
                 <span className="text-[10px] font-extrabold text-indigo-650 uppercase tracking-wider block">Grooming Session</span>
                 <span className="text-lg font-bold text-slate-900 block flex items-center gap-1.5">
@@ -852,9 +855,9 @@ export default function Book() {
             </div>
 
             {/* Pet info */}
-            <div className="p-5 bg-white space-y-3">
+            <div className="p-4 sm:p-5 bg-white space-y-3">
               <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block border-b border-slate-100 pb-1.5">Pet Details</span>
-              <div className="grid gap-y-2 gap-x-6 sm:grid-cols-4 text-sm">
+              <div className="grid gap-y-3 gap-x-4 grid-cols-2 sm:grid-cols-4 text-sm">
                 <div>
                   <span className="text-slate-400 text-xs font-bold block">Pet Name</span>
                   <span className="font-bold text-slate-800 flex items-center gap-1">
@@ -886,9 +889,9 @@ export default function Book() {
             </div>
 
             {/* Owner info */}
-            <div className="p-5 bg-white space-y-3">
+            <div className="p-4 sm:p-5 bg-white space-y-3">
               <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block border-b border-slate-100 pb-1.5">Owner Information</span>
-              <div className="grid gap-y-2 gap-x-6 sm:grid-cols-3 text-sm">
+              <div className="grid gap-y-3 gap-x-4 grid-cols-1 min-[480px]:grid-cols-2 sm:grid-cols-3 text-sm">
                 <div>
                   <span className="text-slate-400 text-xs font-bold block">Owner Name</span>
                   <span className="font-bold text-slate-800 flex items-center gap-1">
@@ -902,14 +905,16 @@ export default function Book() {
                 </div>
                 <div>
                   <span className="text-slate-400 text-xs font-bold block">Email Address</span>
-                  <span className="font-bold text-slate-800">{email || 'Not Provided'}</span>
+                  <span className="font-bold text-slate-800 truncate" title={email || 'Not Provided'}>
+                    {email || 'Not Provided'}
+                  </span>
                 </div>
               </div>
             </div>
 
             {/* Customer notes */}
             {customerNotes && (
-              <div className="p-5 bg-white text-sm">
+              <div className="p-4 sm:p-5 bg-white text-sm">
                 <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block border-b border-slate-100 pb-1.5 mb-2">
                   Customer Message / Special Instructions
                 </span>
@@ -930,7 +935,7 @@ export default function Book() {
           />
 
           {/* Consent Checkbox */}
-          <div className="bg-slate-50 border border-slate-200/80 p-5 rounded-2xl space-y-3 text-xs font-semibold text-slate-650">
+          <div className="bg-slate-50 border border-slate-200/80 p-4 sm:p-5 rounded-2xl space-y-3 text-xs font-semibold text-slate-650">
             <label className="flex items-start gap-3 cursor-pointer select-none">
               <input
                 type="checkbox"
@@ -942,7 +947,7 @@ export default function Book() {
                 I agree that the parlour may use my details to manage my booking and contact me about this appointment. <span className="text-red-500">*</span>
               </span>
             </label>
-            <p className="text-slate-405 pl-7.5 text-[11px] font-bold">
+            <p className="text-slate-405 pl-[30px] text-[11px] font-bold">
               By submitting this booking request, you agree to the{' '}
               <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">Privacy Policy</a>
               {' '}and{' '}
@@ -950,12 +955,12 @@ export default function Book() {
             </p>
           </div>
 
-          <div className="flex justify-between pt-6 border-t border-slate-200/60">
+          <div className="flex flex-col-reverse sm:flex-row justify-between gap-3 pt-6 border-t border-slate-200/60">
             <button
               type="button"
               disabled={submitting}
               onClick={() => setStep(3)}
-              className="px-5 py-2.5 border border-slate-200 hover:border-slate-350 rounded-xl text-slate-600 font-bold hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              className="w-full sm:w-auto px-5 py-3 sm:py-2.5 border border-slate-200 hover:border-slate-350 rounded-xl text-slate-600 font-bold hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
             >
               Back
             </button>
@@ -963,7 +968,7 @@ export default function Book() {
               type="button"
               disabled={submitting || !consentAgreed || !turnstileToken}
               onClick={handleSubmitBooking}
-              className="px-6 py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md flex items-center gap-2 cursor-pointer text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              className="w-full sm:w-auto justify-center px-6 py-3 sm:py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md flex items-center gap-2 cursor-pointer text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
             >
               {submitting ? (
                 <>

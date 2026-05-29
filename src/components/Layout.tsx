@@ -24,7 +24,7 @@ export default function Layout({ children }: LayoutProps) {
   const { profile } = useAuth()
 
   return (
-    <div className="min-h-screen bg-slate-50/50 text-slate-800 flex flex-col font-sans selection:bg-indigo-500/10 selection:text-indigo-900">
+    <div className="min-h-screen bg-slate-50/50 text-slate-800 flex flex-col font-sans selection:bg-indigo-500/10 selection:text-indigo-900 overflow-x-hidden">
       {/* Header */}
       {isAdmin && (
         <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
@@ -178,7 +178,7 @@ export default function Layout({ children }: LayoutProps) {
             {children}
           </div>
         ) : (
-          <div className="bg-white rounded-2xl shadow-xs border border-slate-200/80 p-6 md:p-8 min-h-[500px]">
+          <div className="bg-white rounded-2xl shadow-xs border border-slate-200/80 p-4 sm:p-6 md:p-8 min-h-[500px]">
             {children}
           </div>
         )}
