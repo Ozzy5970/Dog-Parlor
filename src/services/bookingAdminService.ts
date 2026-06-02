@@ -8,10 +8,14 @@ export interface Booking {
   service_id: string
   start_time: string // ISO string
   end_time: string // ISO string
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'no_show'
+  status: 'pending' | 'confirmed' | 'declined' | 'cancelled' | 'no_show' | 'arrived' | 'completed'
   source: 'online' | 'phone' | 'walk_in' | 'admin'
   customer_notes: string | null
   admin_notes: string | null
+  payment_method?: 'cash' | 'card' | null
+  arrived_at?: string | null
+  completed_at?: string | null
+  paid_at?: string | null
   created_at?: string
   updated_at?: string
   customer: {
@@ -89,18 +93,23 @@ export async function updateBookingStatus(
   businessId: string,
   bookingId: string,
   status: Booking['status'],
-  adminNotes?: string | null
+  adminNotes?: string | null,
+  paymentMethod?: 'cash' | 'card' | null
 ): Promise<Booking> {
   // Enforce valid status transition rules
   let allowedPrevious: Booking['status'][] = []
   if (status === 'confirmed') {
     allowedPrevious = ['pending']
+  } else if (status === 'declined') {
+    allowedPrevious = ['pending']
   } else if (status === 'cancelled') {
     allowedPrevious = ['pending', 'confirmed']
-  } else if (status === 'completed') {
+  } else if (status === 'arrived') {
     allowedPrevious = ['confirmed']
   } else if (status === 'no_show') {
-    allowedPrevious = ['confirmed']
+    allowedPrevious = ['confirmed', 'arrived']
+  } else if (status === 'completed') {
+    allowedPrevious = ['confirmed', 'arrived']
   } else {
     throw new Error('Invalid status transition')
   }
@@ -108,6 +117,16 @@ export async function updateBookingStatus(
   const updates: any = { status }
   if (adminNotes !== undefined) {
     updates.admin_notes = adminNotes
+  }
+
+  if (status === 'arrived') {
+    updates.arrived_at = new Date().toISOString()
+  } else if (status === 'completed') {
+    updates.completed_at = new Date().toISOString()
+    updates.paid_at = new Date().toISOString()
+    if (paymentMethod) {
+      updates.payment_method = paymentMethod
+    }
   }
 
   const { data, error } = await supabase
@@ -272,8 +291,8 @@ export function aggregateBookings(bookings: Booking[]): BookingAnalyticsSummary 
     acc.status[b.status] = (acc.status[b.status] || 0) + 1
     // Group by service
     acc.service_id[b.service_id] = (acc.service_id[b.service_id] || 0) + 1
-    // Total revenue for completed/confirmed
-    if (b.status === 'completed' || b.status === 'confirmed') {
+    // Total revenue for completed only with cash/card payment
+    if (b.status === 'completed' && (b.payment_method === 'cash' || b.payment_method === 'card')) {
       acc.total_revenue_cents += (b.service?.price_cents || 0)
     }
     return acc

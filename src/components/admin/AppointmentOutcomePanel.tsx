@@ -36,7 +36,7 @@ export default function AppointmentOutcomePanel({ businessId }: AppointmentOutco
   const [prevFreshCount, setPrevFreshCount] = useState(0)
   const [hasInitialized, setHasInitialized] = useState(false)
 
-  // Fetch due bookings: confirmed and start_time <= now
+  // Fetch due bookings: confirmed/arrived and start_time <= now
   const fetchDueBookings = async () => {
     try {
       const now = new Date()
@@ -66,7 +66,7 @@ export default function AppointmentOutcomePanel({ businessId }: AppointmentOutco
           )
         `)
         .eq('business_id', businessId)
-        .eq('status', 'confirmed')
+        .in('status', ['confirmed', 'arrived'])
         .lte('start_time', nowStr)
         .order('start_time', { ascending: true })
 
@@ -119,16 +119,34 @@ export default function AppointmentOutcomePanel({ businessId }: AppointmentOutco
     return () => clearInterval(interval)
   }, [businessId, prevFreshCount, hasInitialized])
 
-  const handleOutcome = async (bookingId: string, outcome: 'completed' | 'no_show') => {
+  const handleArrived = async (bookingId: string) => {
     setError(null)
     setActionLoading(true)
     try {
-      await updateBookingStatus(businessId, bookingId, outcome)
-      // Remove from local list immediately to feel responsive
+      const updatedBooking = await updateBookingStatus(businessId, bookingId, 'arrived')
+      setDueBookings(prev => prev.map(b => b.id === bookingId ? updatedBooking : b))
+    } catch (e: any) {
+      console.error('Failed to mark dog as arrived:', e)
+      if (e.message === 'CONCURRENCY_ERROR') {
+        setError('This booking was already updated. Refreshing...')
+        await fetchDueBookings()
+      } else {
+        setError('Could not mark dog as arrived. Please try again.')
+      }
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleNoShow = async (bookingId: string) => {
+    setError(null)
+    setActionLoading(true)
+    try {
+      await updateBookingStatus(businessId, bookingId, 'no_show')
+      // Remove from local list immediately
       const updated = dueBookings.filter(b => b.id !== bookingId)
       setDueBookings(updated)
       
-      // Update fresh count for remaining items
       const STALE_THRESHOLD_MINUTES = 60
       const now = new Date()
       const thresholdTime = new Date(now.getTime() - STALE_THRESHOLD_MINUTES * 60 * 1000)
@@ -139,12 +157,43 @@ export default function AppointmentOutcomePanel({ businessId }: AppointmentOutco
         setCurrentIndex(updated.length - 1)
       }
     } catch (e: any) {
-      console.error('Failed to save booking outcome:', e)
+      console.error('Failed to mark booking as no-show:', e)
       if (e.message === 'CONCURRENCY_ERROR') {
         setError('This booking was already updated. Refreshing...')
         await fetchDueBookings()
       } else {
-        setError('Could not update status. Please try again.')
+        setError('Could not mark booking as no-show. Please try again.')
+      }
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleCheckout = async (bookingId: string, paymentMethod: 'cash' | 'card') => {
+    setError(null)
+    setActionLoading(true)
+    try {
+      await updateBookingStatus(businessId, bookingId, 'completed', null, paymentMethod)
+      // Remove from local list immediately
+      const updated = dueBookings.filter(b => b.id !== bookingId)
+      setDueBookings(updated)
+      
+      const STALE_THRESHOLD_MINUTES = 60
+      const now = new Date()
+      const thresholdTime = new Date(now.getTime() - STALE_THRESHOLD_MINUTES * 60 * 1000)
+      const freshBookings = updated.filter(b => new Date(b.start_time) >= thresholdTime)
+      setPrevFreshCount(freshBookings.length)
+      
+      if (currentIndex >= updated.length && updated.length > 0) {
+        setCurrentIndex(updated.length - 1)
+      }
+    } catch (e: any) {
+      console.error('Failed to complete checkout:', e)
+      if (e.message === 'CONCURRENCY_ERROR') {
+        setError('This booking was already updated. Refreshing...')
+        await fetchDueBookings()
+      } else {
+        setError('Could not complete checkout. Please try again.')
       }
     } finally {
       setActionLoading(false)
@@ -203,11 +252,14 @@ export default function AppointmentOutcomePanel({ businessId }: AppointmentOutco
       >
         <div className="w-2.5 h-2.5 rounded-full bg-white animate-ping"></div>
         <span>
-          {dueBookings.length} {dueBookings.length === 1 ? 'appointment needs outcome' : 'appointments need outcome'}
+          {dueBookings.length} {dueBookings.length === 1 ? 'appointment needs action' : 'appointments need action'}
         </span>
       </div>
     )
   }
+
+  const servicePriceCents = activeBooking.service?.price_cents || 0
+  const formattedAmount = `R ${(servicePriceCents / 100).toFixed(0)}`
 
   // EXPANDED STATE PANEL
   return (
@@ -217,7 +269,7 @@ export default function AppointmentOutcomePanel({ businessId }: AppointmentOutco
         <div className="flex items-center space-x-2">
           <Clock className="w-4 h-4 text-white animate-pulse" />
           <span className="font-extrabold text-xs uppercase tracking-wider">
-            Appointment due now
+            {activeBooking.status === 'arrived' ? 'Checkout Appointment' : 'Appointment due now'}
           </span>
         </div>
         <button 
@@ -266,9 +318,16 @@ export default function AppointmentOutcomePanel({ businessId }: AppointmentOutco
               <Clock className="w-3 h-3 text-slate-500" />
               <span>{formatLocalTime(activeBooking.start_time)}</span>
             </div>
-            <span className="text-[10px] font-black uppercase text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-md">
-              {activeBooking.service?.duration_minutes} mins
-            </span>
+            <div className="flex items-center space-x-1">
+              {activeBooking.status === 'arrived' && (
+                <span className="text-[9px] font-black uppercase text-emerald-700 bg-emerald-50 border border-emerald-250 px-2 py-0.5 rounded-md shrink-0">
+                  Arrived
+                </span>
+              )}
+              <span className="text-[10px] font-black uppercase text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-md shrink-0">
+                {activeBooking.service?.duration_minutes} mins
+              </span>
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -324,24 +383,47 @@ export default function AppointmentOutcomePanel({ businessId }: AppointmentOutco
 
         {/* Outcome & Details Button Panel */}
         <div className="pt-2 border-t border-slate-100 space-y-2">
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => handleOutcome(activeBooking.id, 'completed')}
-              disabled={actionLoading}
-              className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-750 text-white text-xs font-extrabold rounded-xl flex items-center justify-center space-x-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-              <span>Arrived</span>
-            </button>
-            <button
-              onClick={() => handleOutcome(activeBooking.id, 'no_show')}
-              disabled={actionLoading}
-              className="flex-1 py-2.5 border border-slate-200 hover:border-red-200 hover:bg-red-50 text-red-650 hover:text-red-750 text-xs font-extrabold rounded-xl flex items-center justify-center space-x-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <X className="w-3.5 h-3.5" />
-              <span>No-show</span>
-            </button>
-          </div>
+          {activeBooking.status === 'confirmed' ? (
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => handleArrived(activeBooking.id)}
+                disabled={actionLoading}
+                className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-750 text-white text-xs font-extrabold rounded-xl flex items-center justify-center space-x-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                <span>Arrived</span>
+              </button>
+              <button
+                onClick={() => handleNoShow(activeBooking.id)}
+                disabled={actionLoading}
+                className="flex-1 py-2.5 border border-slate-200 hover:border-red-200 hover:bg-red-50 text-red-650 hover:text-red-750 text-xs font-extrabold rounded-xl flex items-center justify-center space-x-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <X className="w-3.5 h-3.5" />
+                <span>Did not arrive</span>
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => handleCheckout(activeBooking.id, 'cash')}
+                  disabled={actionLoading}
+                  className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-xl flex items-center justify-center space-x-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                  <span>Paid {formattedAmount} Cash</span>
+                </button>
+                <button
+                  onClick={() => handleCheckout(activeBooking.id, 'card')}
+                  disabled={actionLoading}
+                  className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-750 text-white text-xs font-extrabold rounded-xl flex items-center justify-center space-x-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                  <span>Paid {formattedAmount} Card</span>
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="flex items-center space-x-2">
             <button

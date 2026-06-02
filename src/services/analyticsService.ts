@@ -2,10 +2,11 @@ import { supabase } from '../lib/supabase'
 
 export interface AnalyticsBooking {
   id: string
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'no_show'
+  status: 'pending' | 'confirmed' | 'declined' | 'cancelled' | 'no_show' | 'arrived' | 'completed'
   source: 'online' | 'phone' | 'walk_in' | 'admin'
   service_id: string
   start_time: string // ISO string
+  payment_method?: 'cash' | 'card' | null
   service: {
     name: string
     price_cents: number
@@ -29,6 +30,7 @@ export async function fetchAnalyticsData(
       source,
       service_id,
       start_time,
+      payment_method,
       service:services (
         name,
         price_cents,

@@ -16,6 +16,11 @@ export function sanitizePhoneForWhatsApp(phone: string | null | undefined): stri
     cleaned = '27' + cleaned.substring(1)
   }
   
+  // If it starts with '270' and has 12 digits (e.g. from +27 (0)72 123 4567)
+  if (cleaned.startsWith('270') && cleaned.length === 12) {
+    cleaned = '27' + cleaned.substring(3)
+  }
+  
   // A standard international phone number has between 7 and 15 digits
   if (cleaned.length < 7 || cleaned.length > 15) {
     return ''
@@ -64,7 +69,19 @@ export function getConfirmedBookingMessage(
   dateStr: string,
   timeStr: string
 ): string {
-  return `Hi ${customerName}, this is ${businessName}. Your booking for ${petName} is confirmed for ${dateStr} at ${timeStr}.`
+  return `Hi ${customerName}, your booking for ${petName} at ${businessName} has been confirmed for ${dateStr} at ${timeStr}. See you then!`
+}
+
+/**
+ * Generates the pre-filled message template for a declined booking.
+ */
+export function getDeclinedBookingMessage(
+  customerName: string,
+  petName: string,
+  dateStr: string,
+  timeStr: string
+): string {
+  return `Hi ${customerName}, unfortunately we cannot accept your requested booking for ${petName} on ${dateStr} at ${timeStr}. Please contact us to arrange another time.`
 }
 
 /**

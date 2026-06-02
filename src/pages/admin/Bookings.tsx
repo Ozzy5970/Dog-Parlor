@@ -7,7 +7,6 @@ import {
   Search,
   Check,
   X,
-  CheckCircle,
   AlertTriangle,
   UserX,
   MessageCircle,
@@ -26,7 +25,7 @@ import {
   VolumeX,
   Bell
 } from 'lucide-react'
-import { createWhatsAppLink, getPendingBookingMessage, getConfirmedBookingMessage, getCancelledBookingMessage, getTodayReminderMessage } from '../../lib/whatsapp'
+import { createWhatsAppLink, getPendingBookingMessage, getConfirmedBookingMessage, getCancelledBookingMessage, getTodayReminderMessage, getDeclinedBookingMessage } from '../../lib/whatsapp'
 import {
   PageHeader,
   SectionCard,
@@ -70,10 +69,14 @@ const getStatusBadgeProps = (status: Booking['status']) => {
       return { status: 'pending' as const, label: 'Pending' }
     case 'confirmed':
       return { status: 'active' as const, label: 'Confirmed' }
+    case 'arrived':
+      return { status: 'warning' as const, label: 'Arrived' }
     case 'completed':
       return { status: 'success' as const, label: 'Completed' }
     case 'cancelled':
       return { status: 'danger' as const, label: 'Cancelled' }
+    case 'declined':
+      return { status: 'danger' as const, label: 'Declined' }
     case 'no_show':
       return { status: 'inactive' as const, label: 'No Show' }
     default:
@@ -442,7 +445,7 @@ export default function Bookings() {
   }, [bookings, isInitialLoad, soundEnabled])
 
   // Handle status update actions
-  const handleStatusChange = async (bookingId: string, newStatus: Booking['status']) => {
+  const handleStatusChange = async (bookingId: string, newStatus: Booking['status'], paymentMethod?: 'cash' | 'card' | null) => {
     if (!profile?.business_id) return
     setError(null)
     setSuccess(null)
@@ -464,13 +467,53 @@ export default function Bookings() {
     setActionLoading(bookingId)
 
     try {
-      await updateBookingStatus(profile.business_id, bookingId, newStatus)
+      await updateBookingStatus(profile.business_id, bookingId, newStatus, null, paymentMethod)
       setSuccess(`Booking status successfully updated to ${newStatus}.`)
       
       // Update local state without full reload
       setBookings((prev) =>
-        prev.map((b) => (b.id === bookingId ? { ...b, status: newStatus } : b))
+        prev.map((b) => (b.id === bookingId ? { 
+          ...b, 
+          status: newStatus,
+          payment_method: paymentMethod,
+          arrived_at: newStatus === 'arrived' ? new Date().toISOString() : b.arrived_at,
+          completed_at: newStatus === 'completed' ? new Date().toISOString() : b.completed_at,
+          paid_at: newStatus === 'completed' ? new Date().toISOString() : b.paid_at
+        } : b))
       )
+
+      // Open WhatsApp automatically on successful DB update for confirmed/declined
+      if (newStatus === 'confirmed' || newStatus === 'declined') {
+        const booking = bookings.find(b => b.id === bookingId)
+        if (booking) {
+          const customerPhone = booking.customer?.phone
+          const customerName = booking.customer?.full_name || ''
+          const petName = booking.pet?.name || 'your dog'
+          const dateStr = formatLocalDatePart(booking.start_time)
+          const timeStr = formatLocalTimePart(booking.start_time)
+          
+          let waOpened = false
+          if (customerPhone) {
+            let message = ''
+            if (newStatus === 'confirmed') {
+              message = getConfirmedBookingMessage(customerName, businessName, petName, dateStr, timeStr)
+            } else {
+              message = getDeclinedBookingMessage(customerName, petName, dateStr, timeStr)
+            }
+            const whatsappUrl = createWhatsAppLink(customerPhone, message)
+            if (whatsappUrl) {
+              window.open(whatsappUrl, "_blank", "noopener,noreferrer")
+              waOpened = true
+            }
+          }
+          
+          if (waOpened) {
+            setSuccess(`Booking ${newStatus === 'confirmed' ? 'confirmed' : 'declined'}. WhatsApp message opened — if it did not open, use the WhatsApp button below.`)
+          } else {
+            setSuccess(`Booking ${newStatus === 'confirmed' ? 'confirmed' : 'declined'}, but no valid WhatsApp number was found for this customer.`)
+          }
+        }
+      }
     } catch (err: any) {
       console.error('Error updating status:', err)
       if (err.message === 'CONCURRENCY_ERROR') {
@@ -564,7 +607,6 @@ export default function Bookings() {
   }
 
   // Sorting & Grouping by Operational Priority
-  const nowTime = new Date().getTime()
 
   // Group A: Awaiting Confirmation (pending, sorted by created_at ascending, else start_time ascending)
   const awaitingBookings = baseFilteredBookings
@@ -575,18 +617,18 @@ export default function Bookings() {
       return aTime - bTime
     })
 
-  // Group B: Upcoming Confirmed (confirmed, start_time >= now, sorted by start_time ascending)
+  // Group B: Upcoming / Active (confirmed or arrived, sorted by start_time ascending)
   const upcomingBookings = baseFilteredBookings
-    .filter((b) => b.status === 'confirmed' && new Date(b.start_time).getTime() >= nowTime)
+    .filter((b) => b.status === 'confirmed' || b.status === 'arrived')
     .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
 
-  // Group C: History / Past & Closed (completed, cancelled, no_show, and confirmed with start_time < now, sorted by start_time descending)
+  // Group C: History / Past & Closed (completed, cancelled, declined, no_show, sorted by start_time descending)
   const historyBookings = baseFilteredBookings
     .filter((b) =>
       b.status === 'completed' ||
       b.status === 'cancelled' ||
-      b.status === 'no_show' ||
-      (b.status === 'confirmed' && new Date(b.start_time).getTime() < nowTime)
+      b.status === 'declined' ||
+      b.status === 'no_show'
     )
     .sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime())
 
@@ -857,8 +899,7 @@ export default function Bookings() {
                   const timeStr = formatLocalTimePart(booking.start_time)
                   
                   const isToday = new Date(booking.start_time).toDateString() === new Date().toDateString()
-                  
-                  let message = ''
+                                   let message = ''
                   if (booking.status === 'pending') {
                     message = getPendingBookingMessage(cName, businessName, pName, dateStr, timeStr)
                   } else if (booking.status === 'confirmed') {
@@ -867,6 +908,8 @@ export default function Bookings() {
                     } else {
                       message = getConfirmedBookingMessage(cName, businessName, pName, dateStr, timeStr)
                     }
+                  } else if (booking.status === 'declined') {
+                    message = getDeclinedBookingMessage(cName, pName, dateStr, timeStr)
                   } else {
                     message = getCancelledBookingMessage(cName, businessName, pName, dateStr, timeStr)
                   }
@@ -915,12 +958,12 @@ export default function Bookings() {
                         </button>
                       )}
                       <button
-                        onClick={() => setConfirmCancelId(booking.id)}
+                        onClick={() => handleStatusChange(booking.id, 'declined')}
                         disabled={actionLoading === booking.id}
-                        className="w-full py-2 border border-slate-200 hover:border-red-200 hover:bg-red-50 text-red-600 hover:text-red-700 text-xs font-bold rounded-xl transition-all flex items-center justify-center space-x-1.5 disabled:opacity-50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-500/20"
+                        className="w-full py-2 border border-slate-200 hover:border-red-200 hover:bg-red-50 text-red-650 hover:text-red-750 text-xs font-bold rounded-xl transition-all flex items-center justify-center space-x-1.5 disabled:opacity-50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-500/20"
                       >
                         <X className="w-3.5 h-3.5" />
-                        <span>Cancel Booking</span>
+                        <span>Decline Booking</span>
                       </button>
                     </>
                   )}
@@ -928,12 +971,12 @@ export default function Bookings() {
                   {booking.status === 'confirmed' && (
                     <>
                       <button
-                        onClick={() => handleStatusChange(booking.id, 'completed')}
+                        onClick={() => handleStatusChange(booking.id, 'arrived')}
                         disabled={actionLoading === booking.id}
-                        className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center justify-center space-x-1.5 disabled:opacity-50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                        className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center justify-center space-x-1.5 disabled:opacity-50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                       >
-                        <CheckCircle className="w-3.5 h-3.5" />
-                        <span>Mark Completed</span>
+                        <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                        <span>Mark Arrived</span>
                       </button>
                       <button
                         onClick={() => handleStatusChange(booking.id, 'no_show')}
@@ -950,6 +993,27 @@ export default function Bookings() {
                       >
                         <X className="w-3.5 h-3.5" />
                         <span>Cancel Appointment</span>
+                      </button>
+                    </>
+                  )}
+
+                  {booking.status === 'arrived' && (
+                    <>
+                      <button
+                        onClick={() => handleStatusChange(booking.id, 'completed', 'cash')}
+                        disabled={actionLoading === booking.id}
+                        className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center justify-center space-x-1.5 disabled:opacity-50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                      >
+                        <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                        <span>Paid Cash ({booking.service ? formatPrice(booking.service.price_cents) : ''})</span>
+                      </button>
+                      <button
+                        onClick={() => handleStatusChange(booking.id, 'completed', 'card')}
+                        disabled={actionLoading === booking.id}
+                        className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center justify-center space-x-1.5 disabled:opacity-50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      >
+                        <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                        <span>Paid Card ({booking.service ? formatPrice(booking.service.price_cents) : ''})</span>
                       </button>
                     </>
                   )}
@@ -1154,7 +1218,7 @@ export default function Bookings() {
         {[
           { key: 'all', label: 'All Bookings', count: baseFilteredBookings.length },
           { key: 'awaiting', label: 'Awaiting Confirmation', count: awaitingBookings.length },
-          { key: 'upcoming', label: 'Upcoming Confirmed', count: upcomingBookings.length },
+          { key: 'upcoming', label: 'Upcoming / Active', count: upcomingBookings.length },
           { key: 'history', label: 'History / Past & Closed', count: historyBookings.length }
         ].map((tab) => {
           const isActive = activeTab === tab.key
@@ -1197,8 +1261,10 @@ export default function Bookings() {
             { key: 'all', label: 'All Statuses', color: 'bg-slate-100 text-slate-700 border-slate-200' },
             ...(activeTab === 'all' ? [{ key: 'pending', label: 'Pending', color: 'bg-amber-50 text-amber-700 border-amber-200' }] : []),
             { key: 'confirmed', label: 'Confirmed', color: 'bg-blue-50 text-blue-700 border-blue-200' },
+            { key: 'arrived', label: 'Arrived', color: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
             { key: 'completed', label: 'Completed', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
             { key: 'cancelled', label: 'Cancelled', color: 'bg-red-50 text-red-700 border-red-200' },
+            { key: 'declined', label: 'Declined', color: 'bg-red-50 text-red-700 border-red-200' },
             { key: 'no_show', label: 'No Show', color: 'bg-slate-100 text-slate-600 border-slate-200' }
           ].map((btn) => {
             const isActive = statusFilter === btn.key
@@ -1255,16 +1321,16 @@ export default function Bookings() {
               </div>
             )}
 
-            {/* 2. Group B: Upcoming Confirmed */}
-            {(activeTab === 'all' || activeTab === 'upcoming') && (statusFilter === 'all' || statusFilter === 'confirmed') && (
+            {/* 2. Group B: Upcoming / Active */}
+            {(activeTab === 'all' || activeTab === 'upcoming') && (statusFilter === 'all' || statusFilter === 'confirmed' || statusFilter === 'arrived') && (
               <div className="space-y-4 pt-2">
                 <h2 className="text-sm font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-indigo-655 bg-indigo-600"></span>
-                  Upcoming Confirmed ({displayedUpcoming.length})
+                  <span className="w-2 h-2 rounded-full bg-indigo-600"></span>
+                  Upcoming / Active ({displayedUpcoming.length})
                 </h2>
                 {displayedUpcoming.length === 0 ? (
                   <div className="p-6 bg-slate-50 border border-slate-200 border-dashed rounded-xl text-center text-slate-450 font-bold text-xs">
-                    No confirmed upcoming bookings.
+                    No active upcoming bookings.
                   </div>
                 ) : (
                   displayedUpcoming.map((booking) => renderBookingCard(booking, false))
@@ -1273,7 +1339,7 @@ export default function Bookings() {
             )}
 
             {/* 3. Group C: History / Past & Closed */}
-            {(activeTab === 'all' || activeTab === 'history') && (statusFilter === 'all' || ['completed', 'cancelled', 'no_show', 'confirmed'].includes(statusFilter)) && (
+            {(activeTab === 'all' || activeTab === 'history') && (statusFilter === 'all' || ['completed', 'cancelled', 'declined', 'no_show'].includes(statusFilter)) && (
               <div className="space-y-4 pt-2">
                 <h2 className="text-sm font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-slate-400"></span>

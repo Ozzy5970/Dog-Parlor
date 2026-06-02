@@ -215,8 +215,10 @@ export default function Analytics() {
   
   const pendingCount = bookings.filter(b => b.status === 'pending').length
   const confirmedCount = bookings.filter(b => b.status === 'confirmed').length
+  const arrivedCount = bookings.filter(b => b.status === 'arrived').length
   const completedCount = bookings.filter(b => b.status === 'completed').length
   const cancelledCount = bookings.filter(b => b.status === 'cancelled').length
+  const declinedCount = bookings.filter(b => b.status === 'declined').length
   const noShowCount = bookings.filter(b => b.status === 'no_show').length
 
   // Bookings by Source
@@ -225,14 +227,18 @@ export default function Analytics() {
   const walkInCount = bookings.filter(b => b.source === 'walk_in').length
   const adminCount = bookings.filter(b => b.source === 'admin').length
 
-  const onlinePercentage = totalBookings > 0 ? (onlineCount / totalBookings) * 100 : 0
-
-  // Revenue metrics: confirmed + completed bookings only
-  const revenueBookings = bookings.filter(b => b.status === 'confirmed' || b.status === 'completed')
-  const estimatedRevenueCents = revenueBookings.reduce((sum, b) => sum + (b.service?.price_cents || 0), 0)
+  // Revenue metrics: completed bookings with cash/card payment only
+  const completedRevenueBookings = bookings.filter(b => b.status === 'completed' && (b.payment_method === 'cash' || b.payment_method === 'card'))
+  const completedRevenueCents = completedRevenueBookings.reduce((sum, b) => sum + (b.service?.price_cents || 0), 0)
   
-  const revenueBookingsCount = revenueBookings.length
-  const averageBookingValueCents = revenueBookingsCount > 0 ? Math.round(estimatedRevenueCents / revenueBookingsCount) : 0
+  const cashRevenueCents = bookings.filter(b => b.status === 'completed' && b.payment_method === 'cash').reduce((sum, b) => sum + (b.service?.price_cents || 0), 0)
+  const cardRevenueCents = bookings.filter(b => b.status === 'completed' && b.payment_method === 'card').reduce((sum, b) => sum + (b.service?.price_cents || 0), 0)
+
+  // Potential revenue: confirmed + arrived bookings
+  const potentialRevenueBookings = bookings.filter(b => b.status === 'confirmed' || b.status === 'arrived')
+  const potentialRevenueCents = potentialRevenueBookings.reduce((sum, b) => sum + (b.service?.price_cents || 0), 0)
+  
+  const averageBookingValueCents = completedRevenueBookings.length > 0 ? Math.round(completedRevenueCents / completedRevenueBookings.length) : 0
 
   // Popular Services: Group by service name
   const servicesMap: Record<string, { count: number; revenueCents: number; duration: number }> = {}
@@ -246,8 +252,8 @@ export default function Analytics() {
     }
     servicesMap[sName].count += 1
     
-    // Revenue counts if confirmed or completed
-    if (b.status === 'confirmed' || b.status === 'completed') {
+    // Revenue counts if completed with cash/card payment
+    if (b.status === 'completed' && (b.payment_method === 'cash' || b.payment_method === 'card')) {
       servicesMap[sName].revenueCents += price
     }
     servicesMap[sName].duration += duration
@@ -273,7 +279,7 @@ export default function Analytics() {
     monthIndex: number
     monthName: string
     totalBookings: number
-    confirmedCompletedCount: number
+    completedPaidCount: number
     onlineCount: number
     estimatedRevenueCents: number
     averageBookingValueCents: number
@@ -284,7 +290,7 @@ export default function Analytics() {
     monthIndex: index,
     monthName: name,
     totalBookings: 0,
-    confirmedCompletedCount: 0,
+    completedPaidCount: 0,
     onlineCount: 0,
     estimatedRevenueCents: 0,
     averageBookingValueCents: 0,
@@ -304,9 +310,9 @@ export default function Analytics() {
       const stats = monthlyData[mIdx]
       stats.totalBookings += 1
       
-      const isConfirmedOrCompleted = b.status === 'confirmed' || b.status === 'completed'
-      if (isConfirmedOrCompleted) {
-        stats.confirmedCompletedCount += 1
+      const isCompletedPaid = b.status === 'completed' && (b.payment_method === 'cash' || b.payment_method === 'card')
+      if (isCompletedPaid) {
+        stats.completedPaidCount += 1
         stats.estimatedRevenueCents += b.service?.price_cents || 0
       }
       
@@ -320,8 +326,8 @@ export default function Analytics() {
   })
 
   monthlyData.forEach(stats => {
-    if (stats.confirmedCompletedCount > 0) {
-      stats.averageBookingValueCents = Math.round(stats.estimatedRevenueCents / stats.confirmedCompletedCount)
+    if (stats.completedPaidCount > 0) {
+      stats.averageBookingValueCents = Math.round(stats.estimatedRevenueCents / stats.completedPaidCount)
     }
     
     const services = Object.entries(monthlyServicesMap[stats.monthIndex])
@@ -336,14 +342,17 @@ export default function Analytics() {
 
   // --- Monthly Business Report Calculations ---
   const repTotalBookings = reportBookings.length
-  const repConfirmed = reportBookings.filter(b => b.status === 'confirmed').length
   const repCompleted = reportBookings.filter(b => b.status === 'completed').length
-  const repConfirmedCompleted = repConfirmed + repCompleted
+  const repArrived = reportBookings.filter(b => b.status === 'arrived').length
   const repCancelled = reportBookings.filter(b => b.status === 'cancelled').length
   const repNoShow = reportBookings.filter(b => b.status === 'no_show').length
   
-  const repEstimatedRevenue = reportBookings
-    .filter(b => b.status === 'confirmed' || b.status === 'completed')
+  const repCompletedRevenue = reportBookings
+    .filter(b => b.status === 'completed' && (b.payment_method === 'cash' || b.payment_method === 'card'))
+    .reduce((sum, b) => sum + (b.service?.price_cents || 0), 0)
+
+  const repPotentialRevenue = reportBookings
+    .filter(b => b.status === 'confirmed' || b.status === 'arrived')
     .reduce((sum, b) => sum + (b.service?.price_cents || 0), 0)
     
   const repOnline = reportBookings.filter(b => b.source === 'online').length
@@ -378,9 +387,9 @@ export default function Analytics() {
     .slice(0, 3)
 
   // MoM Comparison Calculations
-  const prevConfirmedCompleted = prevReportBookings.filter(b => b.status === 'confirmed' || b.status === 'completed').length
-  const prevEstimatedRevenue = prevReportBookings
-    .filter(b => b.status === 'confirmed' || b.status === 'completed')
+  const prevCompletedPaid = prevReportBookings.filter(b => b.status === 'completed' && (b.payment_method === 'cash' || b.payment_method === 'card')).length
+  const prevCompletedRevenue = prevReportBookings
+    .filter(b => b.status === 'completed' && (b.payment_method === 'cash' || b.payment_method === 'card'))
     .reduce((sum, b) => sum + (b.service?.price_cents || 0), 0)
   const prevOnline = prevReportBookings.filter(b => b.source === 'online').length
   const prevBad = prevReportBookings.filter(b => b.status === 'cancelled' || b.status === 'no_show').length
@@ -394,14 +403,14 @@ export default function Analytics() {
   }
   const prevMonthName = `${monthNames[prevMonthIdx]} ${prevYearNum}`
 
-  const bookingDiff = repConfirmedCompleted - prevConfirmedCompleted
+  const bookingDiff = repCompleted - prevCompletedPaid
   const bookingLabel = bookingDiff > 0
-    ? `Confirmed/completed increased by ${bookingDiff}`
+    ? `Completed paid increased by ${bookingDiff}`
     : bookingDiff < 0
-    ? `Confirmed/completed decreased by ${Math.abs(bookingDiff)}`
-    : `Confirmed/completed stayed the same`
+    ? `Completed paid decreased by ${Math.abs(bookingDiff)}`
+    : `Completed paid stayed the same`
 
-  const revenueDiff = repEstimatedRevenue - prevEstimatedRevenue
+  const revenueDiff = repCompletedRevenue - prevCompletedRevenue
   const revenueLabel = revenueDiff > 0
     ? `Revenue increased by R${Math.abs(revenueDiff / 100).toFixed(0)}`
     : revenueDiff < 0
@@ -619,28 +628,65 @@ export default function Analytics() {
           />
         ) : (
           <div className="space-y-8 animate-fadeIn">
-            {/* Metrics Grid */}
+            {/* Primary Metrics Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {/* Estimated Revenue */}
-              <div className="bg-gradient-to-br from-indigo-600 via-indigo-700 to-indigo-900 text-white rounded-3xl p-6 shadow-sm flex flex-col justify-between min-h-[140px] relative overflow-hidden group">
+              {/* Actual Completed Revenue */}
+              <div className="bg-gradient-to-br from-emerald-600 via-emerald-700 to-emerald-900 text-white rounded-3xl p-6 shadow-sm flex flex-col justify-between min-h-[140px] relative overflow-hidden group">
                 <div className="absolute right-0 bottom-0 opacity-15 transform translate-x-3 translate-y-3 pointer-events-none group-hover:scale-110 transition-transform duration-300">
                   <DollarSign className="w-36 h-36" />
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-widest text-indigo-100">Estimated Revenue</span>
+                  <span className="text-xs font-bold uppercase tracking-widest text-emerald-100">Actual Completed Revenue</span>
                   <div className="w-8 h-8 bg-white/10 rounded-xl flex items-center justify-center">
                     <DollarSign className="w-4 h-4 text-white" />
                   </div>
                 </div>
                 <div className="mt-4">
-                  <h3 className="text-3xl font-black tracking-tight">{formatPrice(estimatedRevenueCents)}</h3>
-                  <p className="text-[10px] font-bold text-indigo-150 mt-1 uppercase tracking-wide">
-                    {revenueBookingsCount} confirmed/completed
+                  <h3 className="text-3xl font-black tracking-tight">{formatPrice(completedRevenueCents)}</h3>
+                  <p className="text-[10px] font-bold text-emerald-150 mt-1 uppercase tracking-wide">
+                    {completedCount} completed paid bookings
                   </p>
                 </div>
               </div>
 
-              {/* Total Bookings */}
+              {/* Potential Revenue */}
+              <div className="bg-gradient-to-br from-indigo-600 via-indigo-700 to-indigo-850 text-white rounded-3xl p-6 shadow-sm flex flex-col justify-between min-h-[140px] relative overflow-hidden group">
+                <div className="absolute right-0 bottom-0 opacity-15 transform translate-x-3 translate-y-3 pointer-events-none group-hover:scale-110 transition-transform duration-300">
+                  <TrendingUp className="w-36 h-36" />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-widest text-indigo-100">Potential Revenue</span>
+                  <div className="w-8 h-8 bg-white/10 rounded-xl flex items-center justify-center">
+                    <TrendingUp className="w-4 h-4 text-white" />
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <h3 className="text-3xl font-black tracking-tight">{formatPrice(potentialRevenueCents)}</h3>
+                  <p className="text-[10px] font-bold text-indigo-150 mt-1 uppercase tracking-wide">
+                    {confirmedCount + arrivedCount} confirmed & arrived slots
+                  </p>
+                </div>
+              </div>
+
+              {/* Avg Booking Value */}
+              <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs flex flex-col justify-between min-h-[140px]">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Avg Booking Value</span>
+                  <div className="w-8 h-8 bg-indigo-50 text-indigo-650 rounded-xl flex items-center justify-center">
+                    <TrendingUp className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <h3 className="text-3xl font-black text-slate-800 tracking-tight">
+                    {formatPrice(averageBookingValueCents)}
+                  </h3>
+                  <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-wide">
+                    Per completed paid booking
+                  </p>
+                </div>
+              </div>
+
+              {/* Requests Received */}
               <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs flex flex-col justify-between min-h-[140px]">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Requests Received</span>
@@ -655,40 +701,51 @@ export default function Analytics() {
                   </p>
                 </div>
               </div>
+            </div>
 
-              {/* Average Booking Value */}
-              <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs flex flex-col justify-between min-h-[140px]">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Avg Booking Value</span>
-                  <div className="w-8 h-8 bg-emerald-50 text-emerald-650 rounded-xl flex items-center justify-center">
-                    <TrendingUp className="w-4 h-4" />
-                  </div>
+            {/* Row 2: Secondary / Payment breakdowns */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {/* Cash Revenue */}
+              <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-xs flex items-center space-x-4">
+                <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center shrink-0">
+                  <DollarSign className="w-5 h-5" />
                 </div>
-                <div className="mt-4">
-                  <h3 className="text-3xl font-black text-slate-800 tracking-tight">
-                    {formatPrice(averageBookingValueCents)}
-                  </h3>
-                  <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-wide">
-                    Per confirmed/completed
-                  </p>
+                <div>
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Cash Revenue</span>
+                  <p className="text-lg font-black text-slate-800 mt-0.5">{formatPrice(cashRevenueCents)}</p>
                 </div>
               </div>
 
-              {/* Online Booking Percentage */}
-              <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs flex flex-col justify-between min-h-[140px]">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Online Requests</span>
-                  <div className="w-8 h-8 bg-blue-50 text-blue-650 rounded-xl flex items-center justify-center">
-                    <Laptop className="w-4 h-4" />
-                  </div>
+              {/* Card Revenue */}
+              <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-xs flex items-center space-x-4">
+                <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+                  <DollarSign className="w-5 h-5" />
                 </div>
-                <div className="mt-4">
-                  <h3 className="text-3xl font-black text-slate-800 tracking-tight">
-                    {onlinePercentage.toFixed(1)}%
-                  </h3>
-                  <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-wide">
-                    {onlineCount} of {totalBookings} total requests
-                  </p>
+                <div>
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Card Revenue</span>
+                  <p className="text-lg font-black text-slate-800 mt-0.5">{formatPrice(cardRevenueCents)}</p>
+                </div>
+              </div>
+
+              {/* Arrived / Checkout Pending */}
+              <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-xs flex items-center space-x-4">
+                <div className="w-10 h-10 bg-indigo-50 text-indigo-655 text-indigo-600 rounded-xl flex items-center justify-center shrink-0">
+                  <Clock className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Arrived / Checkout Pending</span>
+                  <p className="text-lg font-black text-slate-800 mt-0.5">{arrivedCount}</p>
+                </div>
+              </div>
+
+              {/* Client No-Shows */}
+              <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-xs flex items-center space-x-4">
+                <div className="w-10 h-10 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center shrink-0">
+                  <Users className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">No-Shows</span>
+                  <p className="text-lg font-black text-slate-800 mt-0.5">{noShowCount}</p>
                 </div>
               </div>
             </div>
@@ -703,13 +760,13 @@ export default function Analytics() {
                 <div className="hidden md:block overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="border-b border-slate-205 text-xs font-bold uppercase tracking-wider text-slate-400 bg-slate-50/50">
+                      <tr className="border-b border-slate-200 text-xs font-bold uppercase tracking-wider text-slate-400 bg-slate-50/50">
                         <th className="py-3 px-4">Month</th>
-                        <th className="py-3 px-4 text-right">Estimated Revenue</th>
+                        <th className="py-3 px-4 text-right">Actual Completed Revenue</th>
                         <th className="py-3 px-4 text-center">Total Bookings</th>
-                        <th className="py-3 px-4 text-center">Confirmed + Completed</th>
+                        <th className="py-3 px-4 text-center">Completed Paid</th>
                         <th className="py-3 px-4 text-center">Online Bookings</th>
-                        <th className="py-3 px-4">Most Popular Service</th>
+                        <th className="py-3 px-4 font-extrabold">Most Popular Service</th>
                         <th className="py-3 px-4 text-right">Avg Booking Value</th>
                       </tr>
                     </thead>
@@ -726,7 +783,7 @@ export default function Analytics() {
                             {month.totalBookings}
                           </td>
                           <td className="py-3 px-4 text-center text-slate-600">
-                            {month.confirmedCompletedCount}
+                            {month.completedPaidCount}
                           </td>
                           <td className="py-3 px-4 text-center text-slate-500">
                             {month.onlineCount}
@@ -764,8 +821,8 @@ export default function Analytics() {
                           <span className="text-slate-700 text-sm font-bold">{month.totalBookings}</span>
                         </div>
                         <div>
-                          <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Confirmed/Completed</span>
-                          <span className="text-slate-700 text-sm font-bold">{month.confirmedCompletedCount}</span>
+                          <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Completed Paid</span>
+                          <span className="text-slate-700 text-sm font-bold">{month.completedPaidCount}</span>
                         </div>
                         <div>
                           <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Online Bookings</span>
@@ -842,9 +899,11 @@ export default function Analytics() {
                 <div className="space-y-5">
                   {[
                     { name: 'Completed Appointments', key: 'completed', count: completedCount, color: 'bg-emerald-500', barBg: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
-                    { name: 'Confirmed Slots', key: 'confirmed', count: confirmedCount, color: 'bg-indigo-500', barBg: 'bg-indigo-50 text-indigo-800 border-indigo-200' },
+                    { name: 'Arrived / Checkout Pending', key: 'arrived', count: arrivedCount, color: 'bg-indigo-500', barBg: 'bg-indigo-50 text-indigo-800 border-indigo-200' },
+                    { name: 'Confirmed Slots', key: 'confirmed', count: confirmedCount, color: 'bg-sky-500', barBg: 'bg-blue-50 text-blue-800 border-blue-200' },
                     { name: 'Pending Requests', key: 'pending', count: pendingCount, color: 'bg-amber-500', barBg: 'bg-amber-50 text-amber-700 border-amber-200' },
                     { name: 'Cancelled Bookings', key: 'cancelled', count: cancelledCount, color: 'bg-red-500', barBg: 'bg-red-50 text-red-800 border-red-200' },
+                    { name: 'Declined Requests', key: 'declined', count: declinedCount, color: 'bg-rose-500', barBg: 'bg-rose-50 text-rose-800 border-rose-250' },
                     { name: 'Client No-Shows', key: 'no_show', count: noShowCount, color: 'bg-slate-400', barBg: 'bg-slate-50 text-slate-500 border-slate-200' }
                   ].map(st => {
                     const pct = totalBookings > 0 ? (st.count / totalBookings) * 100 : 0
@@ -1000,24 +1059,24 @@ export default function Analytics() {
                 {/* B) Main Scorecards */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                   <div className="border border-slate-200 bg-slate-50/50 p-5 rounded-2xl flex flex-col justify-between min-h-[100px]">
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Estimated Revenue</span>
-                    <p className="text-2xl font-black text-slate-800 mt-2">{formatPrice(repEstimatedRevenue)}</p>
-                    <span className="text-[9px] font-semibold text-slate-400 block mt-1">Confirmed & Completed</span>
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Completed Revenue</span>
+                    <p className="text-2xl font-black text-slate-800 mt-2">{formatPrice(repCompletedRevenue)}</p>
+                    <span className="text-[9px] font-semibold text-slate-400 block mt-1">Cash & Card</span>
                   </div>
                   <div className="border border-slate-200 bg-slate-50/50 p-5 rounded-2xl flex flex-col justify-between min-h-[100px]">
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Requests Received</span>
-                    <p className="text-2xl font-black text-slate-800 mt-2">{repTotalBookings}</p>
-                    <span className="text-[9px] font-semibold text-slate-400 block mt-1">All requests logged</span>
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Potential Revenue</span>
+                    <p className="text-2xl font-black text-slate-800 mt-2">{formatPrice(repPotentialRevenue)}</p>
+                    <span className="text-[9px] font-semibold text-slate-400 block mt-1">Confirmed & Arrived</span>
                   </div>
                   <div className="border border-slate-200 bg-slate-50/50 p-5 rounded-2xl flex flex-col justify-between min-h-[100px]">
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Confirmed / Completed</span>
-                    <p className="text-2xl font-black text-slate-800 mt-2">{repConfirmedCompleted}</p>
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Completed Paid</span>
+                    <p className="text-2xl font-black text-slate-800 mt-2">{repCompleted}</p>
                     <span className="text-[9px] font-semibold text-slate-400 block mt-1">Realized grooms</span>
                   </div>
                   <div className="border border-slate-200 bg-slate-50/50 p-5 rounded-2xl flex flex-col justify-between min-h-[100px]">
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Cancelled Requests</span>
-                    <p className="text-2xl font-black text-slate-800 mt-2">{repCancelled}</p>
-                    <span className="text-[9px] font-semibold text-slate-400 block mt-1">Cancelled or rejected</span>
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Arrived / Pending</span>
+                    <p className="text-2xl font-black text-slate-800 mt-2">{repArrived}</p>
+                    <span className="text-[9px] font-semibold text-slate-400 block mt-1">Dog arrived, payment pending</span>
                   </div>
                   <div className="border border-slate-200 bg-slate-50/50 p-5 rounded-2xl flex flex-col justify-between min-h-[100px]">
                     <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Client No-Shows</span>

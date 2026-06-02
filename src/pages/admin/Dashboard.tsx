@@ -33,7 +33,7 @@ import {
 import { fetchAdminBookingsForRange, updateBookingStatus, type Booking } from '../../services/bookingAdminService'
 import { localTimeToUTC, utcToLocalTimeParts } from '../../lib/dateTime'
 import { supabase } from '../../lib/supabase'
-import { createWhatsAppLink, getPendingBookingMessage, getCancelledBookingMessage, getTodayReminderMessage } from '../../lib/whatsapp'
+import { createWhatsAppLink, getPendingBookingMessage, getConfirmedBookingMessage, getCancelledBookingMessage, getDeclinedBookingMessage, getTodayReminderMessage } from '../../lib/whatsapp'
 
 const sourceLabels: Record<string, string> = {
   online: 'Online',
@@ -56,6 +56,7 @@ export default function Dashboard() {
   
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
 
   const loadDashboardData = async (bid: string) => {
@@ -140,8 +141,9 @@ export default function Dashboard() {
       setOldestPending(pendingResponse.data[0] || null)
       setActiveServicesCount(servicesCountResponse.count || 0)
 
+      // Only completed actual cash/card revenue counts
       const revenue = monthData
-        .filter(b => b.status === 'confirmed' || b.status === 'completed')
+        .filter(b => b.status === 'completed' && (b.payment_method === 'cash' || b.payment_method === 'card'))
         .reduce((sum, b) => sum + (b.service?.price_cents || 0), 0)
       setThisMonthRevenue(revenue)
 
@@ -162,10 +164,41 @@ export default function Dashboard() {
   // Action handlers
   const handleApproveBooking = async (bookingId: string) => {
     if (!profile?.business_id) return
+    setError(null)
+    setSuccess(null)
     try {
       setActionLoading(bookingId)
+      
+      const booking = todayBookings.find(b => b.id === bookingId) || (oldestPending && oldestPending.id === bookingId ? oldestPending : null)
+      
       await updateBookingStatus(profile.business_id, bookingId, 'confirmed')
       await loadDashboardData(profile.business_id)
+
+      if (booking) {
+        const customerPhone = booking.customer?.phone
+        const customerName = booking.customer?.full_name || ''
+        const petName = booking.pet?.name || 'your dog'
+        const dateStr = formatLocalDatePart(booking.start_time)
+        const timeStr = formatLocalTimePart(booking.start_time)
+        
+        let waOpened = false
+        if (customerPhone) {
+          const message = getConfirmedBookingMessage(customerName, businessName, petName, dateStr, timeStr)
+          const whatsappUrl = createWhatsAppLink(customerPhone, message)
+          if (whatsappUrl) {
+            window.open(whatsappUrl, "_blank", "noopener,noreferrer")
+            waOpened = true
+          }
+        }
+        
+        if (waOpened) {
+          setSuccess(`Booking confirmed. WhatsApp message opened — if it did not open, use the WhatsApp button below.`)
+        } else {
+          setSuccess(`Booking confirmed, but no valid WhatsApp number was found for this customer.`)
+        }
+      } else {
+        setSuccess('Booking successfully confirmed.')
+      }
     } catch (err: any) {
       console.error('Error approving booking:', err)
       if (err.message === 'CONCURRENCY_ERROR') {
@@ -181,17 +214,50 @@ export default function Dashboard() {
 
   const handleCancelBooking = async (bookingId: string) => {
     if (!profile?.business_id) return
+    setError(null)
+    setSuccess(null)
     try {
       setActionLoading(bookingId)
-      await updateBookingStatus(profile.business_id, bookingId, 'cancelled')
+      
+      const booking = todayBookings.find(b => b.id === bookingId) || (oldestPending && oldestPending.id === bookingId ? oldestPending : null)
+      const isPending = booking ? booking.status === 'pending' : true
+      const targetStatus = isPending ? 'declined' : 'cancelled'
+      
+      await updateBookingStatus(profile.business_id, bookingId, targetStatus)
       await loadDashboardData(profile.business_id)
+
+      if (booking && isPending) {
+        const customerPhone = booking.customer?.phone
+        const customerName = booking.customer?.full_name || ''
+        const petName = booking.pet?.name || 'your dog'
+        const dateStr = formatLocalDatePart(booking.start_time)
+        const timeStr = formatLocalTimePart(booking.start_time)
+        
+        let waOpened = false
+        if (customerPhone) {
+          const message = getDeclinedBookingMessage(customerName, petName, dateStr, timeStr)
+          const whatsappUrl = createWhatsAppLink(customerPhone, message)
+          if (whatsappUrl) {
+            window.open(whatsappUrl, "_blank", "noopener,noreferrer")
+            waOpened = true
+          }
+        }
+        
+        if (waOpened) {
+          setSuccess(`Booking declined. WhatsApp message opened — if it did not open, use the WhatsApp button below.`)
+        } else {
+          setSuccess(`Booking declined, but no valid WhatsApp number was found for this customer.`)
+        }
+      } else {
+        setSuccess(`Booking successfully ${targetStatus}.`)
+      }
     } catch (err: any) {
-      console.error('Error cancelling booking:', err)
+      console.error('Error cancelling/declining booking:', err)
       if (err.message === 'CONCURRENCY_ERROR') {
         setError('This booking was already updated. Refreshing...')
         await loadDashboardData(profile.business_id)
       } else {
-        setError(err.message || 'Failed to cancel appointment.')
+        setError(err.message || 'Failed to update appointment.')
       }
     } finally {
       setActionLoading(null)
@@ -291,6 +357,7 @@ export default function Dashboard() {
       />
 
       {error && <AlertMessage type="error" message={error} />}
+      {success && <AlertMessage type="success" message={success} />}
 
       {/* 1. Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
