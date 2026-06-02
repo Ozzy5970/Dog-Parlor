@@ -48,25 +48,38 @@ export function SectionCard({ title, icon, children, className = '', headerActio
 
 // 3. StatusBadge
 interface StatusBadgeProps {
-  status: 'active' | 'inactive' | 'pending' | 'success' | 'danger' | 'warning'
+  status: 'pending' | 'confirmed' | 'arrived' | 'completed' | 'no_show' | 'cancelled' | 'declined' | 'active' | 'inactive' | 'success' | 'danger' | 'warning' | 'info'
   label: string
 }
 
 export function StatusBadge({ status, label }: StatusBadgeProps) {
   const styles = {
+    // Utility classes
     active: 'bg-emerald-50 text-emerald-700 border-emerald-200/80',
     success: 'bg-emerald-50 text-emerald-700 border-emerald-200/80',
     inactive: 'bg-slate-50 text-slate-500 border-slate-200/80',
     pending: 'bg-amber-50 text-amber-700 border-amber-200/80',
     warning: 'bg-amber-50 text-amber-700 border-amber-200/80',
     danger: 'bg-red-50 text-red-700 border-red-200/80',
+    info: 'bg-blue-50 text-blue-700 border-blue-200/80',
+
+    // Semantic status colors
+    confirmed: 'bg-blue-50 text-blue-700 border-blue-200/80',        // Blue — approved/upcoming
+    arrived: 'bg-teal-50 text-teal-700 border-teal-200/80',          // Teal — active/check-out pending
+    completed: 'bg-emerald-50 text-emerald-700 border-emerald-200/80', // Green — done
+    no_show: 'bg-red-50 text-red-700 border-red-200/80',             // Red/Orange — problem/missed
+    cancelled: 'bg-slate-50 text-slate-500 border-slate-200/80',     // Gray — cancelled
+    declined: 'bg-slate-50 text-slate-500 border-slate-200/80',       // Gray — rejected
   }
+  
+  const styleClass = styles[status] || styles.inactive
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border uppercase tracking-wider ${styles[status]}`}>
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border uppercase tracking-wider ${styleClass}`}>
       {label}
     </span>
   )
 }
+
 
 // 4. EmptyState
 interface EmptyStateProps {

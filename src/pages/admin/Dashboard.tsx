@@ -456,9 +456,18 @@ export default function Dashboard() {
                   </div>
                   <div>
                     {(() => {
-                      const status = nextAppointment.status === 'confirmed' ? 'active' as const : 'pending' as const
-                      const label = nextAppointment.status === 'confirmed' ? 'Confirmed' : 'Pending Review'
-                      return <StatusBadge status={status} label={label} />
+                      const status = nextAppointment.status
+                      const labels: Record<string, string> = {
+                        pending: 'Awaiting approval',
+                        confirmed: 'Confirmed',
+                        arrived: 'Checkout pending',
+                        completed: 'Completed',
+                        cancelled: 'Cancelled',
+                        declined: 'Declined',
+                        no_show: 'No-show'
+                      }
+                      const label = labels[status] || status
+                      return <StatusBadge status={status as any} label={label} />
                     })()}
                   </div>
                 </div>
@@ -580,14 +589,18 @@ export default function Dashboard() {
                         })()
                       )}
                       {(() => {
-                        let status: 'pending' | 'active' | 'success' | 'danger' | 'inactive' = 'inactive'
-                        let label: string = b.status
-                        if (b.status === 'pending') { status = 'pending'; label = 'Pending' }
-                        else if (b.status === 'confirmed') { status = 'active'; label = 'Confirmed' }
-                        else if (b.status === 'completed') { status = 'success'; label = 'Completed' }
-                        else if (b.status === 'cancelled') { status = 'danger'; label = 'Cancelled' }
-                        else if (b.status === 'no_show') { status = 'inactive'; label = 'No Show' }
-                        return <StatusBadge status={status} label={label} />
+                        const status = b.status
+                        const labels: Record<string, string> = {
+                          pending: 'Awaiting approval',
+                          confirmed: 'Confirmed',
+                          arrived: 'Checkout pending',
+                          completed: 'Completed',
+                          cancelled: 'Cancelled',
+                          declined: 'Declined',
+                          no_show: 'No-show'
+                        }
+                        const label = labels[status] || status
+                        return <StatusBadge status={status as any} label={label} />
                       })()}
                     </div>
                   </div>

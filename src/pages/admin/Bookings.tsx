@@ -66,21 +66,21 @@ const formatPrice = (cents: number): string => {
 const getStatusBadgeProps = (status: Booking['status']) => {
   switch (status) {
     case 'pending':
-      return { status: 'pending' as const, label: 'Pending' }
+      return { status: 'pending' as const, label: 'Awaiting approval' }
     case 'confirmed':
-      return { status: 'active' as const, label: 'Confirmed' }
+      return { status: 'confirmed' as const, label: 'Confirmed' }
     case 'arrived':
-      return { status: 'warning' as const, label: 'Arrived' }
+      return { status: 'arrived' as const, label: 'Checkout pending' }
     case 'completed':
-      return { status: 'success' as const, label: 'Completed' }
+      return { status: 'completed' as const, label: 'Completed' }
     case 'cancelled':
-      return { status: 'danger' as const, label: 'Cancelled' }
+      return { status: 'cancelled' as const, label: 'Cancelled' }
     case 'declined':
-      return { status: 'danger' as const, label: 'Declined' }
+      return { status: 'declined' as const, label: 'Declined' }
     case 'no_show':
-      return { status: 'inactive' as const, label: 'No Show' }
+      return { status: 'no_show' as const, label: 'No-show' }
     default:
-      return { status: 'inactive' as const, label: status }
+      return { status: 'inactive' as any, label: status }
   }
 }
 

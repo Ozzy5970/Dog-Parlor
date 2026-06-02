@@ -993,7 +993,20 @@ export default function Customers() {
                                   <span className="text-[9px] font-black uppercase text-slate-400 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded-md">
                                     {b.source}
                                   </span>
-                                  <StatusBadge status={b.status === 'confirmed' ? 'active' : 'pending'} label={b.status} />
+                                  {(() => {
+                                    const status = b.status
+                                    const labels: Record<string, string> = {
+                                      pending: 'Awaiting approval',
+                                      confirmed: 'Confirmed',
+                                      arrived: 'Checkout pending',
+                                      completed: 'Completed',
+                                      cancelled: 'Cancelled',
+                                      declined: 'Declined',
+                                      no_show: 'No-show'
+                                    }
+                                    const label = labels[status] || status
+                                    return <StatusBadge status={status as any} label={label} />
+                                  })()}
                                 </div>
                               </div>
                             ))}
@@ -1011,10 +1024,18 @@ export default function Customers() {
                                     {b.source}
                                   </span>
                                   {(() => {
-                                    let status: 'success' | 'danger' | 'inactive' = 'inactive'
-                                    if (b.status === 'completed') status = 'success'
-                                    else if (b.status === 'cancelled') status = 'danger'
-                                    return <StatusBadge status={status} label={b.status} />
+                                    const status = b.status
+                                    const labels: Record<string, string> = {
+                                      pending: 'Awaiting approval',
+                                      confirmed: 'Confirmed',
+                                      arrived: 'Checkout pending',
+                                      completed: 'Completed',
+                                      cancelled: 'Cancelled',
+                                      declined: 'Declined',
+                                      no_show: 'No-show'
+                                    }
+                                    const label = labels[status] || status
+                                    return <StatusBadge status={status as any} label={label} />
                                   })()}
                                 </div>
                               </div>

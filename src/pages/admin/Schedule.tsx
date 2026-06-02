@@ -33,21 +33,24 @@ const formatPrice = (cents: number): string => {
   return `R ${(cents / 100).toFixed(2)}`
 }
 
-// Helper to get full status badge props
 const getStatusBadgeProps = (status: Booking['status']) => {
   switch (status) {
     case 'pending':
-      return { status: 'pending' as const, label: 'Pending' }
+      return { status: 'pending' as const, label: 'Awaiting approval' }
     case 'confirmed':
-      return { status: 'active' as const, label: 'Confirmed' }
+      return { status: 'confirmed' as const, label: 'Confirmed' }
+    case 'arrived':
+      return { status: 'arrived' as const, label: 'Checkout pending' }
     case 'completed':
-      return { status: 'success' as const, label: 'Completed' }
+      return { status: 'completed' as const, label: 'Completed' }
     case 'cancelled':
-      return { status: 'danger' as const, label: 'Cancelled' }
+      return { status: 'cancelled' as const, label: 'Cancelled' }
+    case 'declined':
+      return { status: 'declined' as const, label: 'Declined' }
     case 'no_show':
-      return { status: 'inactive' as const, label: 'No Show' }
+      return { status: 'no_show' as const, label: 'No-show' }
     default:
-      return { status: 'inactive' as const, label: status }
+      return { status: 'inactive' as any, label: status }
   }
 }
 
@@ -185,7 +188,7 @@ export default function Schedule() {
 
   // Filter bookings client-side: hide cancelled, completed, and no_show by default
   const filteredBookings = bookings.filter(
-    b => showClosed || b.status === 'pending' || b.status === 'confirmed'
+    b => showClosed || b.status === 'pending' || b.status === 'confirmed' || b.status === 'arrived'
   )
 
   // Group bookings by local date string
@@ -440,7 +443,9 @@ export default function Schedule() {
                               booking.status === 'pending'
                                 ? 'bg-amber-400'
                                 : booking.status === 'confirmed'
-                                ? 'bg-indigo-600'
+                                ? 'bg-blue-500'
+                                : booking.status === 'arrived'
+                                ? 'bg-teal-500'
                                 : booking.status === 'completed'
                                 ? 'bg-emerald-500'
                                 : 'bg-slate-300'
@@ -496,7 +501,7 @@ export default function Schedule() {
                 <div className="space-y-4 max-h-[450px] overflow-y-auto pr-1">
                   {selectedDayBookings.map((booking) => {
                     const statusBadge = getStatusBadgeProps(booking.status)
-                    const isPriority = booking.status === 'pending' || booking.status === 'confirmed'
+                    const isPriority = booking.status === 'pending' || booking.status === 'confirmed' || booking.status === 'arrived'
 
                     return (
                       <div

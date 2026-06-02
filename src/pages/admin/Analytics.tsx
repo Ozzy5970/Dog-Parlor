@@ -683,7 +683,7 @@ export default function Analytics() {
               {/* Total Bookings */}
               <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs flex flex-col justify-between min-h-[140px]">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Total Bookings</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Total Requests / Bookings</span>
                   <div className="w-8 h-8 bg-indigo-50 text-indigo-650 rounded-xl flex items-center justify-center">
                     <CalendarRange className="w-4 h-4" />
                   </div>
